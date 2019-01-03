@@ -1,6 +1,6 @@
 /* -*-c++-*- */
-/* osgEarth - Dynamic map generation toolkit for OpenSceneGraph
- * Copyright 2016 Pelican Mapping
+/* osgEarth - Geospatial SDK for OpenSceneGraph
+ * Copyright 2018 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -131,8 +131,8 @@ namespace
 
         bool clampProjectionMatrixImplementation(osg::Matrixf& projection, double& znear, double& zfar) const
         {
-            double n = std::max( znear, _minNear );
-            double f = std::min( zfar, _maxFar );
+            double n = osg::maximum( znear, _minNear );
+            double f = osg::minimum( zfar, _maxFar );
             bool r = _clampProjectionMatrix( projection, n, f, _nearFarRatio );
             if ( r ) {
                 znear = n;
@@ -143,8 +143,8 @@ namespace
 
         bool clampProjectionMatrixImplementation(osg::Matrixd& projection, double& znear, double& zfar) const
         {
-            double n = std::max( znear, _minNear );
-            double f = std::min( zfar, _maxFar );
+            double n = osg::maximum( znear, _minNear );
+            double f = osg::minimum( zfar, _maxFar );
             bool r = _clampProjectionMatrix( projection, n, f, _nearFarRatio );
             if ( r ) {
                 znear = n;
@@ -176,7 +176,7 @@ _autoFarPlaneClamping( true )
         {
             // Select the minimal radius..
             const osg::EllipsoidModel* em = map->getProfile()->getSRS()->getEllipsoid();
-            _rp = std::min( em->getRadiusEquator(), em->getRadiusPolar() );
+            _rp = osg::minimum( em->getRadiusEquator(), em->getRadiusPolar() );
             _rp2 = _rp*_rp;
             _active = true;
         }
@@ -189,7 +189,7 @@ _autoFarPlaneClamping( true )
     else
     {
         const osg::EllipsoidModel* em = Registry::instance()->getGlobalGeodeticProfile()->getSRS()->getEllipsoid();
-        _rp = std::min( em->getRadiusEquator(), em->getRadiusPolar() );
+        _rp = osg::minimum( em->getRadiusEquator(), em->getRadiusPolar() );
         _rp2 = _rp*_rp;
         _active = true;
     }

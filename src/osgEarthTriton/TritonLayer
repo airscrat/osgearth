@@ -1,6 +1,6 @@
 /* -*-c++-*- */
-/* osgEarth - Dynamic map generation toolkit for OpenSceneGraph
- * Copyright 2016 Pelican Mapping
+/* osgEarth - Geospatial SDK for OpenSceneGraph
+ * Copyright 2018 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -26,10 +26,10 @@
 #include <osgEarth/ImageLayer>
 #include <osgEarthUtil/Ocean>
 #include <osgEarthTriton/TritonCallback>
+#include <osgEarthTriton/TritonIntersections>
 
 namespace osgEarth { namespace Triton
 {
-
     /**
      * Serializable options for initializing the TritonLayer.
      */
@@ -144,6 +144,11 @@ namespace osgEarth { namespace Triton
         /** Maximum visibility altitude */
         void setMaxAltitude(float alt);
         float getMaxAltitude() const;
+
+        //! Adds an intersection set.
+        //! Each frame, Triton will perform intersections against the ocean surface
+        //! (including the waves) and populate the set with the results.
+        void addIntersections(TritonIntersections*);
 
     public: // Layer
 

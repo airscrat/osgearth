@@ -1,6 +1,6 @@
 /* -*-c++-*- */
-/* osgEarth - Dynamic map generation toolkit for OpenSceneGraph
- * Copyright 2016 Pelican Mapping
+/* osgEarth - Geospatial SDK for OpenSceneGraph
+ * Copyright 2018 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -59,6 +59,12 @@ osg::Group*
 AnnotationLayer::getGroup() const
 {
     return _root.get();
+}
+
+void
+AnnotationLayer::addChild(AnnotationNode* node)
+{
+    _root->addChild(node);
 }
 
 void

@@ -1,6 +1,6 @@
 /* -*-c++-*- */
-/* osgEarth - Dynamic map generation toolkit for OpenSceneGraph
-* Copyright 2016 Pelican Mapping
+/* osgEarth - Geospatial SDK for OpenSceneGraph
+* Copyright 2018 Pelican Mapping
 * http://osgearth.org
 *
 * osgEarth is free software; you can redistribute it and/or modify
@@ -252,7 +252,7 @@ namespace
                     //break;
                 }
 
-                halfWidthNear = std::max(halfWidthNear, minHalfWidthNear);
+                halfWidthNear = osg::maximum(halfWidthNear, minHalfWidthNear);
             }
 
             // if the far plane is narrower than the near plane, bail out and 

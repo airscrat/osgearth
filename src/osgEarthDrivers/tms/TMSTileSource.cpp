@@ -1,6 +1,6 @@
 /* -*-c++-*- */
-/* osgEarth - Dynamic map generation toolkit for OpenSceneGraph
-* Copyright 2016 Pelican Mapping
+/* osgEarth - Geospatial SDK for OpenSceneGraph
+* Copyright 2018 Pelican Mapping
 * http://osgearth.org
 *
 * osgEarth is free software; you can redistribute it and/or modify
@@ -219,7 +219,7 @@ TMSTileSource::createImage(const TileKey&    key,
         
         if (image.valid() && _options.coverage() == true)
         {
-            image->setInternalTextureFormat(GL_LUMINANCE32F_ARB);
+            image->setInternalTextureFormat(GL_R16F);
             ImageUtils::markAsUnNormalized(image.get(), true);
         }
 

@@ -1,6 +1,6 @@
 /* -*-c++-*- */
-/* osgEarth - Dynamic map generation toolkit for OpenSceneGraph
- * Copyright 2016 Pelican Mapping
+/* osgEarth - Geospatial SDK for OpenSceneGraph
+ * Copyright 2018 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -341,6 +341,7 @@ GeodeticGraticule::setMapNode(MapNode* mapNode)
 
         stateset->addUniform(new osg::Uniform(COLOR_UNIFORM, options().color().get()));
         stateset->addUniform(new osg::Uniform(WIDTH_UNIFORM, options().lineWidth().get()));
+        updateGridLineVisibility();
 
         _callback = new GraticuleTerrainCallback(this);
         mapNode->getTerrainEngine()->addCullCallback(_callback.get());
@@ -515,7 +516,7 @@ GeodeticGraticule::getViewExtent(osgUtil::CullVisitor* cullVisitor) const
     {
         double f, a, zn, zf;
         proj.getPerspective(f,a,zn,zf);
-        zf = std::min(zf, eye.length()-1000.0);
+        zf = osg::minimum(zf, eye.length()-1000.0);
         proj.makePerspective(f, a, zn, zf);
 
         nearPlane = proj(3,2) / (proj(2,2)-1.0);

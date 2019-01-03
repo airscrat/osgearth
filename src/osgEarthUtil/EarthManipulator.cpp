@@ -1,6 +1,6 @@
 /* -*-c++-*- */
-/* osgEarth - Dynamic map generation toolkit for OpenSceneGraph
- * Copyright 2016 Pelican Mapping
+/* osgEarth - Geospatial SDK for OpenSceneGraph
+ * Copyright 2018 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -16,6 +16,8 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
+#undef min
+#undef max
 #include <osgEarthUtil/EarthManipulator>
 #include <osgEarth/GeoMath>
 #include <osgEarth/TerrainEngineNode>
@@ -542,7 +544,6 @@ EarthManipulator::ctor_init()
     _time_s_last_event = 0.0;
     _frameCount = 0;
     _findNodeTraversalMask = 0x01;
-    _time_s_last_frame = 0.0;
     _time_s_now = 0.0;
     _centerHeight = 0.0;
     _time_last_frame = 0.0;
@@ -710,8 +711,6 @@ EarthManipulator::reinitialize()
     _task = new Task();
     _last_action = ACTION_NULL;
     _srs = 0L;
-    //_setting_viewpoint = false;
-    _delta_t = 0.0;
     _pendingViewpoint.unset();
     _setVP0.unset();
     _setVP1.unset();
@@ -999,7 +998,7 @@ EarthManipulator::setViewpoint(const Viewpoint& vp, double duration_seconds)
                 _setVP1->focalPoint() = _setVP0->focalPoint().get();
         }
 
-        _setVPDuration.set( std::max(duration_seconds, 0.0), Units::SECONDS );
+        _setVPDuration.set( osg::maximum(duration_seconds, 0.0), Units::SECONDS );
 
         OE_DEBUG << LC << "setViewpoint:\n"
             << "    from " << _setVP0->toString() << "\n"
@@ -1131,8 +1130,8 @@ EarthManipulator::setViewpointFrame(double time_s)
 
         // Remaining time is the full duration minus the time since initiation:
         double elapsed = time_s - _setVPStartTime->as(Units::SECONDS);
-        double t = std::min(1.0, elapsed / _setVPDuration.as(Units::SECONDS));
-
+        double duration = _setVPDuration.as(Units::SECONDS);
+        double t = osg::minimum(1.0, duration > 0.0 ? elapsed/duration : 1.0);
         double tp = t;
 
         if ( _setVPArcHeight > 0.0 )
@@ -1216,7 +1215,7 @@ EarthManipulator::setLookAt(const osg::Vec3d& center,
     setDistance( range );
 
     _previousUp = getUpVector( _centerLocalToWorld );
-    _centerRotation = computeCenterRotation( center ); //getRotation( center ).getRotate().inverse();
+    _centerRotation = computeCenterRotation( center );
 
     _posOffset = posOffset;
 
@@ -1274,7 +1273,8 @@ EarthManipulator::clearViewpoint()
     _setVP1.unset();
 
     // Restore the matrix values in a neutral state.
-    resetLookAt();
+    recalculateCenterFromLookVector();
+    //resetLookAt();
 
     // Fire the callback to indicate a tethering break.
     if ( _tetherCallback.valid() && breakingTether )
@@ -1304,7 +1304,7 @@ void EarthManipulator::collisionDetect()
     osg::Vec3d eyeUp = getUpVector(eyeCoordFrame);
 
     // Try to intersect the terrain with a vector going straight up and down.
-    double r = std::min( _srs->getEllipsoid()->getRadiusEquator(), _srs->getEllipsoid()->getRadiusPolar() );
+    double r = osg::minimum( _srs->getEllipsoid()->getRadiusEquator(), _srs->getEllipsoid()->getRadiusPolar() );
     osg::Vec3d ip, normal;
 
     if (intersect(eye + eyeUp * r, eye - eyeUp * r, ip, normal))
@@ -1579,14 +1579,10 @@ EarthManipulator::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapt
     osg::View* view = aa.asView();
 
     //double time_s_now = osg::Timer::instance()->time_s();
-    double time_s_now = view->getFrameStamp()->getReferenceTime();
-
+    _time_s_now = view->getFrameStamp()->getReferenceTime();
+    
     if ( ea.getEventType() == osgGA::GUIEventAdapter::FRAME )
     {
-        _time_s_last_frame = _time_s_now;
-        _time_s_now = time_s_now;
-        _delta_t = _time_s_now - _time_s_last_frame;
-
         if ( _node.valid() )
         {
             // Update the mapnode reference frame. This is the transformation
@@ -1628,7 +1624,7 @@ EarthManipulator::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapt
                     handleMovementAction(_last_action._type, _throw_dx, _throw_dy, aa.asView());
             }
 
-            aa.requestContinuousUpdate( isSettingViewpoint() || _thrown );
+            aa.requestContinuousUpdate( isSettingViewpoint() || _thrown || _pushed );
 
             if ( _continuous )
             {
@@ -1781,7 +1777,7 @@ EarthManipulator::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapt
                     _throw_dx = fabs(_dx) > 0.01 ? _dx : 0.0;
                     _throw_dy = fabs(_dy) > 0.01 ? _dy : 0.0;
 
-                    if (_settings->getThrowingEnabled() && ( time_s_now - _time_s_last_event < 0.05 ) && (_throw_dx != 0.0 || _throw_dy != 0.0))
+                    if (_settings->getThrowingEnabled() && ( _time_s_now - _time_s_last_event < 0.05 ) && (_throw_dx != 0.0 || _throw_dy != 0.0))
                     {
                         _thrown = true;
                         aa.requestRedraw();
@@ -1838,7 +1834,7 @@ EarthManipulator::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapt
                             aa.requestRedraw();
 
                         if ( _continuous && !wasContinuous )
-                            _last_continuous_action_time = time_s_now; //_time_s_now;
+                            _last_continuous_action_time = _time_s_now;
 
                         aa.requestContinuousUpdate(_continuous);
                         _thrown = false;
@@ -1885,7 +1881,7 @@ EarthManipulator::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapt
     if ( handled && action._type != ACTION_NULL )
     {
         _last_action = action;
-        _time_s_last_event = time_s_now;
+        _time_s_last_event = _time_s_now;
     }
 
     return handled;
@@ -2011,9 +2007,6 @@ EarthManipulator::serviceTask()
         double dt = _time_s_now - _task->_time_last_service;
         if ( dt > 0.0 )
         {
-            //OE_INFO << "serviceTask: fr="<<_frame_count<<", dt=" << dt << ", clamped = " << osg::clampBelow(dt,_task->_duration_s)
-            //    << std::endl;
-
             // cap the DT so we don't exceed the expected delta.
             dt = osg::clampBelow( dt, _task->_duration_s );
 
@@ -2043,20 +2036,6 @@ EarthManipulator::serviceTask()
 
     // returns true if the task is still running.
     return _task.valid() && _task->_type != TASK_NONE;
-}
-
-bool
-EarthManipulator::isMouseMoving()
-{
-    if (_ga_t0.get()==NULL || _ga_t1.get()==NULL) return false;
-
-    static const float velocity = 0.1f;
-
-    float dx = _ga_t0->getXnormalized()-_ga_t1->getXnormalized();
-    float dy = _ga_t0->getYnormalized()-_ga_t1->getYnormalized();
-    float len = sqrtf(dx*dx+dy*dy);
-
-    return len > _delta_t * velocity;
 }
 
 bool
@@ -2423,6 +2402,8 @@ EarthManipulator::setByLookAtRaw(const osg::Vec3d& eye,const osg::Vec3d& center,
     osg::Vec3d lv(center-eye);
     setDistance( lv.length() );
     setCenter( center );
+    _posOffset.set(0,0,0);
+    _viewOffset.set(0,0);
 
     osg::Matrixd rotation_matrix = osg::Matrixd::lookAt(eye,center,up);
     _centerRotation = computeCenterRotation(_center); // getRotation(_center).getRotate().inverse();
@@ -2443,9 +2424,6 @@ EarthManipulator::recalculateCenterFromLookVector()
     if (intersected)
     {
         setByLookAtRaw(eye, target, up);
-        //GeoPoint p;
-        //p.fromWorld(getSRS(), target);
-        //OE_INFO << "center = " << p.x() << ", " << p.y() << ", " << p.alt() << "\n";
     }
 
     return intersected;
@@ -3107,7 +3085,7 @@ namespace // Utility functions for drag()
         using namespace osg;
         // new sphere with center at midpoint between pt and input sphere
         Vec3d center2 = (pt + center) / 2.0;
-        double rad2 = (pt - center2).length();
+        double radius2 = (pt - center2).length();
         Vec3d resCtr;
         double resRad;
         // Use Thales' theorem, which states that a triangle inscribed in
@@ -3115,7 +3093,7 @@ namespace // Utility functions for drag()
         // third on the circle, is a right triangle. Since one endpoint is
         // the center of the original sphere (the earth) and the other is
         // pt, we can get our tangent from that.
-        bool valid = sphereInterection(center, radius, center2, rad2, resCtr,
+        bool valid = sphereInterection(center, radius, center2, radius2, resCtr,
                                        resRad);
         if (!valid)
             return Vec3d(0.0, 0.0, 0.0);

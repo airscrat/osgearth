@@ -1,5 +1,5 @@
 /* -*-c++-*- */
-/* osgEarth - Dynamic map generation toolkit for OpenSceneGraph
+/* osgEarth - Geospatial SDK for OpenSceneGraph
 * Copyright 2008-2014 Pelican Mapping
 * http://osgearth.org
 *
@@ -46,6 +46,8 @@ using namespace osgEarth::Drivers::RexTerrainEngine;
 using namespace osgEarth;
 
 #define DEFAULT_MAX_LOD 19u
+
+//#define PROFILE
 
 //------------------------------------------------------------------------
 
@@ -256,8 +258,17 @@ RexTerrainEngineNode::setMap(const Map* map, const TerrainOptions& options)
     // merge in the custom options:
     _terrainOptions.merge( myOptions );
 
+    _morphingSupported = true;
+    if (_terrainOptions.rangeMode() == osg::LOD::PIXEL_SIZE_ON_SCREEN)
+    {
+        OE_INFO << LC << "Range mode = pixel size; pixel tile size = " << _terrainOptions.tilePixelSize().get() << std::endl;
+
+        // force morphing off for PSOS mode
+        _morphingSupported = false;
+    }
+
     // morphing imagery LODs requires we bind parent textures to their own unit.
-    if ( _terrainOptions.morphImagery() == true )
+    if (_terrainOptions.morphImagery() == true && _morphingSupported)
     {
         _requireParentTextures = true;
     }
@@ -266,11 +277,6 @@ RexTerrainEngineNode::setMap(const Map* map, const TerrainOptions& options)
     if (map->getSRS()->isProjected())
     {
         _terrainOptions.morphTerrain() = false;
-    }
-
-    if (_terrainOptions.rangeMode() == osg::LOD::PIXEL_SIZE_ON_SCREEN)
-    {
-        OE_INFO << LC << "Range mode = pixel size; pixel tile size = " << _terrainOptions.tilePixelSize().get() << std::endl;
     }
 
     // if the envvar for tile expiration is set, override the options setting
@@ -372,7 +378,7 @@ RexTerrainEngineNode::setMap(const Map* map, const TerrainOptions& options)
 
     _selectionInfo.initialize(
         0u, // always zero, not the terrain options firstLOD
-        std::min( _terrainOptions.maxLOD().get(), maxLOD ),
+        osg::minimum( _terrainOptions.maxLOD().get(), maxLOD ),
         map->getProfile(),
         _terrainOptions.minTileRangeFactor().get() );
 
@@ -635,10 +641,13 @@ RexTerrainEngineNode::traverse(osg::NodeVisitor& nv)
 #endif
 
         // If we're using geometry pooling, optimize the drawable for shared state
-        // by sorting the draw commands
+        // by sorting the draw commands.
+        // TODO: benchmark this further to see whether it's worthwhile
         if (getEngineContext()->getGeometryPool()->isEnabled())
         {
-            culler._terrain.sortDrawCommands();
+            unsigned total = culler._terrain.sortDrawCommands();
+            //if (!culler._isSpy)
+            //    OE_INFO << LC << "Total tiles to draw = " << total << std::endl;
         }
 
         // The common stateset for the terrain group:
@@ -710,22 +719,11 @@ RexTerrainEngineNode::traverse(osg::NodeVisitor& nv)
 
                 if (lastLayer->_layer)
                 {
-                    stateSetStack.clear();
-
-                    if (lastLayer->_layer->cull(cv, stateSetStack))
-                    {
-                        for (unsigned j = 0; j<stateSetStack.size(); ++j)
-                            cv->pushStateSet(stateSetStack[j]);
-
-                        cv->apply(*lastLayer);
-
-                        for (unsigned j = 0; j<stateSetStack.size(); ++j)
-                            cv->popStateSet();
-                    }
+                    lastLayer->_layer->apply(lastLayer, cv);                    
                 }
                 else
                 {
-                    cv->apply(*lastLayer);
+                    lastLayer->accept(*cv);
                 }
 
                 ++layersDrawn;
@@ -792,7 +790,7 @@ RexTerrainEngineNode::traverse(osg::NodeVisitor& nv)
 unsigned int
 RexTerrainEngineNode::computeSampleSize(unsigned int levelOfDetail)
 {
-    unsigned maxLevel = std::min( *_terrainOptions.maxLOD(), 19u ); // beyond LOD 19 or 20, morphing starts to lose precision.
+    unsigned maxLevel = osg::minimum( *_terrainOptions.maxLOD(), 19u ); // beyond LOD 19 or 20, morphing starts to lose precision.
     unsigned int meshSize = *_terrainOptions.tileSize();
 
     unsigned int sampleSize = meshSize;
@@ -1420,6 +1418,8 @@ RexTerrainEngineNode::updateState()
 
         surfaceStateSet->addUniform(new osg::Uniform("oe_terrain_color", _terrainOptions.color().get()));
 
+        surfaceStateSet->addUniform(new osg::Uniform("oe_terrain_altitude", (float)0.0f));
+
         surfaceStateSet->setDefine("OE_TERRAIN_RENDER_IMAGERY");
 
         // Functions that affect only the terrain surface:
@@ -1438,11 +1438,13 @@ RexTerrainEngineNode::updateState()
         }
 
         // Normal mapping shaders:
-        if (this->normalTexturesRequired())
+        //if (this->normalTexturesRequired())
         {
             package.load(surfaceVP, package.NORMAL_MAP_VERT);
             package.load(surfaceVP, package.NORMAL_MAP_FRAG);
-            surfaceStateSet->setDefine("OE_TERRAIN_RENDER_NORMAL_MAP");
+
+            if (this->normalTexturesRequired())
+                surfaceStateSet->setDefine("OE_TERRAIN_RENDER_NORMAL_MAP");
         }
 
         if (_terrainOptions.enableBlending() == true)
@@ -1456,18 +1458,21 @@ RexTerrainEngineNode::updateState()
         }
 
         // Morphing?
-        if (_terrainOptions.morphTerrain() == true ||
-            _terrainOptions.morphImagery() == true)
+        if (_morphingSupported)
         {
-            package.load(surfaceVP, package.MORPHING_VERT);
+            if (_terrainOptions.morphTerrain() == true ||
+                _terrainOptions.morphImagery() == true)
+            {
+                package.load(surfaceVP, package.MORPHING_VERT);
 
-            if (_terrainOptions.morphImagery() == true)
-            {
-                surfaceStateSet->setDefine("OE_TERRAIN_MORPH_IMAGERY");
-            }
-            if (_terrainOptions.morphTerrain() == true)
-            {
-                surfaceStateSet->setDefine("OE_TERRAIN_MORPH_GEOMETRY");
+                if (_terrainOptions.morphImagery() == true)
+                {
+                    surfaceStateSet->setDefine("OE_TERRAIN_MORPH_IMAGERY");
+                }
+                if (_terrainOptions.morphTerrain() == true)
+                {
+                    surfaceStateSet->setDefine("OE_TERRAIN_MORPH_GEOMETRY");
+                }
             }
         }
 

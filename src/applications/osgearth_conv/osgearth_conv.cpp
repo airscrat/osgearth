@@ -1,6 +1,6 @@
 /* -*-c++-*- */
-/* osgEarth - Dynamic map generation toolkit for OpenSceneGraph
-* Copyright 2016 Pelican Mapping
+/* osgEarth - Geospatial SDK for OpenSceneGraph
+* Copyright 2018 Pelican Mapping
 * http://osgearth.org
 *
 * osgEarth is free software; you can redistribute it and/or modify
@@ -79,7 +79,7 @@ struct ImageLayerToTileSource : public TileHandler
 
     bool hasData(const TileKey& key) const
     {
-        return _source->mayHaveDataInExtent(key.getExtent());
+        return _source->mayHaveData(key);
     }
 
     osg::ref_ptr<ImageLayer> _source;
@@ -109,7 +109,7 @@ struct ElevationLayerToTileSource : public TileHandler
 
     bool hasData(const TileKey& key) const
     {
-        return _source->mayHaveDataInExtent(key.getExtent());
+        return _source->mayHaveData(key);
     }
 
     osg::ref_ptr<ElevationLayer> _source;

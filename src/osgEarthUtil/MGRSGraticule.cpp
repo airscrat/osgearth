@@ -1,6 +1,6 @@
 /* -*-c++-*- */
-/* osgEarth - Dynamic map generation toolkit for OpenSceneGraph
- * Copyright 2016 Pelican Mapping
+/* osgEarth - Geospatial SDK for OpenSceneGraph
+ * Copyright 2018 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -1114,6 +1114,12 @@ MGRSGraticule::rebuild()
         if (ss->getStyle("10", false)) maxRes = 10.0;
         if (ss->getStyle("1", false)) maxRes = 1.0;
         labeler->setMaxResolution(maxRes);
+
+        // Set labeler styles
+        const Style* xEdgeStyle = ss->getStyle("xedge", false);
+        const Style* yEdgeStyle = ss->getStyle("yedge", false);
+        if (xEdgeStyle && yEdgeStyle)
+            labeler->setStyles(*xEdgeStyle, *yEdgeStyle);
 
         osg::ref_ptr<StateSetCache> sscache = new StateSetCache();
         sscache->optimize(geomTop);

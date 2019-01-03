@@ -1,6 +1,6 @@
 /* -*-c++-*- */
-/* osgEarth - Dynamic map generation toolkit for OpenSceneGraph
- * Copyright 2016 Pelican Mapping
+/* osgEarth - Geospatial SDK for OpenSceneGraph
+ * Copyright 2018 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -241,7 +241,7 @@ TerrainEngineNode::computeBound() const
 {
     if ( getEllipsoidModel() )
     {
-        double maxRad = std::max(
+        double maxRad = osg::maximum(
             getEllipsoidModel()->getRadiusEquator(),
             getEllipsoidModel()->getRadiusPolar());
 

@@ -1,6 +1,6 @@
 /* -*-c++-*- */
-/* osgEarth - Dynamic map generation toolkit for OpenSceneGraph
- * Copyright 2016 Pelican Mapping
+/* osgEarth - Geospatial SDK for OpenSceneGraph
+ * Copyright 2018 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -924,9 +924,7 @@ namespace osgEarth { namespace Util
 
         osg::ref_ptr<const osgEarth::SpatialReference> _srs;
 
-        double                  _time_s_last_frame;
         double                  _time_s_now;
-        double                  _delta_t;
         bool                    _thrown;
         double                  _throw_dx;
         double                  _throw_dy;

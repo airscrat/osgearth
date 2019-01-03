@@ -1,6 +1,6 @@
 /* -*-c++-*- */
-/* osgEarth - Dynamic map generation toolkit for OpenSceneGraph
- * Copyright 2016 Pelican Mapping
+/* osgEarth - Geospatial SDK for OpenSceneGraph
+ * Copyright 2018 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -335,7 +335,7 @@ FeaturesToNodeFilter::applyPointSymbology(osg::StateSet*     stateset,
 {
     if ( point )
     {
-        float size = std::max( 0.1f, *point->size() );
+        float size = osg::maximum( 0.1f, *point->size() );
         GLUtils::setPointSize(stateset, size, 1);
     }
 }

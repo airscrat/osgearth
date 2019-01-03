@@ -1,6 +1,6 @@
 /* -*-c++-*- */
-/* osgEarth - Dynamic map generation toolkit for OpenSceneGraph
-* Copyright 2016 Pelican Mapping
+/* osgEarth - Geospatial SDK for OpenSceneGraph
+* Copyright 2018 Pelican Mapping
 * http://osgearth.org
 *
 * osgEarth is free software; you can redistribute it and/or modify
@@ -53,6 +53,7 @@ LabelNode::LabelNode() :
 GeoPositionNode()
 {
     construct();
+    compile();
 }
 
 LabelNode::LabelNode(const std::string& text,
@@ -329,9 +330,9 @@ GeoPositionNode( conf, dbOptions )
 Config
 LabelNode::getConfig() const
 {
-    Config conf( "label" );
+    Config conf = GeoPositionNode::getConfig();
+    conf.key() = "label";
     conf.set( "text",   _text );
     conf.set( "style",  _style );
-
     return conf;
 }

@@ -1,6 +1,6 @@
 /* -*-c++-*- */
-/* osgEarth - Dynamic map generation toolkit for OpenSceneGraph
- * Copyright 2016 Pelican Mapping
+/* osgEarth - Geospatial SDK for OpenSceneGraph
+ * Copyright 2018 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -650,14 +650,7 @@ ElevationLayer::createHeightField(const TileKey&    key,
         return GeoHeightField::INVALID;
     }
 
-    // write to mem cache if needed:
-    if ( result.valid() && !fromMemCache && _memCache.valid() )
-    {
-        CacheBin* bin = _memCache->getOrCreateDefaultBin();
-        bin->write(cacheKey, result.getHeightField(), 0L);
-    }
-
-    // post-processing:
+    // post-processing -- must be done before caching because it may alter the heightfield data
     if ( result.valid() )
     {
         if ( options().noDataPolicy() == NODATA_MSL )
@@ -677,11 +670,18 @@ ElevationLayer::createHeightField(const TileKey&    key,
             }
 
             HeightFieldUtils::resolveInvalidHeights(
-                result.getHeightField(),
+                hf.get(),
                 result.getExtent(),
                 NO_DATA_VALUE,
                 geoid );
         }
+    }
+
+    // write to mem cache if needed:
+    if ( result.valid() && !fromMemCache && _memCache.valid() )
+    {
+        CacheBin* bin = _memCache->getOrCreateDefaultBin();
+        bin->write(cacheKey, result.getHeightField(), 0L);
     }
 
     return result;
@@ -789,10 +789,10 @@ namespace
                 }
                 else
                 {
-                    int s0 = std::max(s - (s % step), 0);
-                    int s1 = (s%step == 0)? s0 : std::min(s0+step, w-1);
-                    int t0 = std::max(t - (t % step), 0);
-                    int t1 = (t%step == 0)? t0 : std::min(t0+step, h-1);
+                    int s0 = osg::maximum(s - (s % step), 0);
+                    int s1 = (s%step == 0)? s0 : osg::minimum(s0+step, w-1);
+                    int t0 = osg::maximum(t - (t % step), 0);
+                    int t1 = (t%step == 0)? t0 : osg::minimum(t0+step, h-1);
                     
                     if (s0 == s1 && t0 == t1)
                     {

@@ -1,6 +1,6 @@
 /* -*-c++-*- */
-/* osgEarth - Dynamic map generation toolkit for OpenSceneGraph
- * Copyright 2016 Pelican Mapping
+/* osgEarth - Geospatial SDK for OpenSceneGraph
+ * Copyright 2018 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -241,6 +241,14 @@ LandCoverCoverageLayerOptions::LandCoverCoverageLayerOptions(const ConfigOptions
 ImageLayerOptions(co),
 _warp(0.0f)
 {
+    // By default, a CoverageLayer must disable all interpolation
+    // since the values contain actual data.
+    // (TODO: because of an architectural vestige, both the ImageLayerOptions
+    // and the TileSourceOptions have a "coverage" property -- so we must set
+    // them both. Someday fix this.)
+    coverage().init(true);
+    driver()->coverage().init(true);
+
     fromConfig(_conf);
 }
 

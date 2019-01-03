@@ -1,6 +1,6 @@
 /* -*-c++-*- */
-/* osgEarth - Dynamic map generation toolkit for OpenSceneGraph
-* Copyright 2016 Pelican Mapping
+/* osgEarth - Geospatial SDK for OpenSceneGraph
+* Copyright 2018 Pelican Mapping
 * http://osgearth.org
 *
 * osgEarth is free software; you can redistribute it and/or modify
@@ -85,12 +85,20 @@ _optionsConcrete(options)
     init();    
 }
 
+void
+VideoLayer::init()
+{
+    ImageLayer::init();
+    
+    // Configure the layer to use createTexture() to return data
+    setUseCreateTexture();
+}
+
 const Status&
 VideoLayer::open()
 {
     if ( !_openCalled )
     {
-
         if (!options().url().isSet())
         {
             return setStatus(Status::Error(Status::ConfigurationError, "Missing required url"));

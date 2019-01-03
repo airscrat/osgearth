@@ -1,5 +1,5 @@
 /* -*-c++-*- */
-/* osgEarth - Dynamic map generation toolkit for OpenSceneGraph
+/* osgEarth - Geospatial SDK for OpenSceneGraph
  * Copyright 2008-2014 Pelican Mapping
  * http://osgearth.org
  *
@@ -78,7 +78,8 @@ DrawTileCommand::draw(osg::RenderInfo& ri, DrawState& dsMaster, osg::Referenced*
 
             if (sampler._texture.valid() && !samplerState._texture.isSetTo(sampler._texture.get()))
             {
-                state.applyTextureAttribute((*dsMaster._bindings)[s].unit(), sampler._texture.get());
+                state.setActiveTextureUnit((*dsMaster._bindings)[s].unit());
+                sampler._texture->apply(state);
                 samplerState._texture = sampler._texture.get();
             }
 
@@ -109,7 +110,8 @@ DrawTileCommand::draw(osg::RenderInfo& ri, DrawState& dsMaster, osg::Referenced*
 
             if (sampler._texture.valid() && !samplerState._texture.isSetTo(sampler._texture.get()))
             {
-                state.applyTextureAttribute((*dsMaster._bindings)[s].unit(), sampler._texture.get());
+                state.setActiveTextureUnit((*dsMaster._bindings)[s].unit());
+                sampler._texture->apply(state);
                 samplerState._texture = sampler._texture.get();
             }
 

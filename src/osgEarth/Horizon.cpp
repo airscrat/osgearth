@@ -1,6 +1,6 @@
 /* -*-c++-*- */
-/* osgEarth - Dynamic map generation toolkit for OpenSceneGraph
- * Copyright 2016 Pelican Mapping
+/* osgEarth - Geospatial SDK for OpenSceneGraph
+ * Copyright 2018 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -131,7 +131,7 @@ Horizon::setEye(const osg::Vec3d& eye)
     _eyeUnit.normalize();
 
     _VC     = osg::componentMultiply( -_eye, _scale );  // viewer->center (scaled)
-    _VCmag  = std::max( _VC.length(), _minVCmag );      // clamped to the min HAE
+    _VCmag  = osg::maximum( _VC.length(), _minVCmag );      // clamped to the min HAE
     _VCmag2 = _VCmag*_VCmag;
     _VHmag2 = _VCmag2 - 1.0;  // viewer->horizon line (scaled)
 
@@ -259,7 +259,7 @@ Horizon::isVisible(const osg::Vec3d& eye,
     // (since the above test failed) the target is occluded.
     // NOTE: it might be better instead to check for a maximum distance from
     // the eyepoint instead.
-    double VCmag = std::max( VC.length(), _minVCmag );      // clamped to the min HAE
+    double VCmag = osg::maximum( VC.length(), _minVCmag );      // clamped to the min HAE
     if ( VCmag < 0.0 )
     {
         return false;
@@ -467,11 +467,11 @@ HorizonNode::HorizonNode()
 void
 HorizonNode::traverse(osg::NodeVisitor& nv)
 {
-    bool isStealth = (VisitorData::isSet(nv, "osgEarth.Stealth"));
+    bool isSpy = (VisitorData::isSet(nv, "osgEarth.Spy"));
 
     if (nv.getVisitorType() == nv.CULL_VISITOR)
     {
-        if (!isStealth)
+        if (!isSpy)
         {
             //Horizon* h = Horizon::get(nv);
             osg::ref_ptr<Horizon> h = new Horizon();

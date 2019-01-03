@@ -1,6 +1,6 @@
 /* -*-c++-*- */
-/* osgEarth - Dynamic map generation toolkit for OpenSceneGraph
- * Copyright 2016 Pelican Mapping
+/* osgEarth - Geospatial SDK for OpenSceneGraph
+ * Copyright 2018 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -62,6 +62,10 @@ namespace osgEarth
      * Trims whitespace from the ends of a string; in-place modification on the string to reduce string copies.
      */
     extern OSGEARTH_EXPORT void trim2( std::string& str );
+
+    //! Removes leading and trailing whitespace, and replaces all other
+    //! whitespace with single spaces
+    extern OSGEARTH_EXPORT std::string trimAndCompress(const std::string& in);
 
     /**
      * True is "ref" starts with "pattern"

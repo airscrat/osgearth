@@ -1,6 +1,6 @@
 /* -*-c++-*- */
-/* osgEarth - Dynamic map generation toolkit for OpenSceneGraph
-* Copyright 2016 Pelican Mapping
+/* osgEarth - Geospatial SDK for OpenSceneGraph
+* Copyright 2018 Pelican Mapping
 * http://osgearth.org
 *
 * osgEarth is free software; you can redistribute it and/or modify
@@ -94,24 +94,30 @@ GraticuleLabelingEngine::UpdateLabelStyles::operator()(GraticuleLabelingEngine::
         i != data.xLabels.end();
         ++i)
     {
-        i->get()->setStyle(*_style);
+        i->get()->setStyle(*_xStyle);
     }
 
-    for(GraticuleLabelingEngine::LabelNodeVector::iterator i = data.xLabels.begin();
+    for(GraticuleLabelingEngine::LabelNodeVector::iterator i = data.yLabels.begin();
         i != data.yLabels.end();
         ++i)
     {
-        i->get()->setStyle(*_style);
+        i->get()->setStyle(*_yStyle);
     }
 }
 
 void
 GraticuleLabelingEngine::setStyle(const Style& style)
 {
-    _xLabelStyle = style;
-    _yLabelStyle = style;
+    setStyles(style, style);
+}
 
-    UpdateLabelStyles update(style);
+void
+GraticuleLabelingEngine::setStyles(const Style& xStyle, const Style& yStyle)
+{
+    _xLabelStyle = xStyle;
+    _yLabelStyle = yStyle;
+
+    UpdateLabelStyles update(_xLabelStyle, _yLabelStyle);
     _cameraDataMap.forEach(update);
 }
 

@@ -1,6 +1,6 @@
 /* -*-c++-*- */
-/* osgEarth - Dynamic map generation toolkit for OpenSceneGraph
- * Copyright 2016 Pelican Mapping
+/* osgEarth - Geospatial SDK for OpenSceneGraph
+ * Copyright 2018 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -109,7 +109,7 @@ Terrain::getHeight(osg::Node*              patch,
     }
 
     const osg::EllipsoidModel* em = getSRS()->getEllipsoid();
-    double r = std::min( em->getRadiusEquator(), em->getRadiusPolar() );
+    double r = osg::minimum( em->getRadiusEquator(), em->getRadiusPolar() );
 
     // calculate the endpoints for an intersection test:
     osg::Vec3d start(x, y, r);

@@ -1,6 +1,6 @@
 /* -*-c++-*- */
-/* osgEarth - Dynamic map generation toolkit for OpenSceneGraph
-* Copyright 2016 Pelican Mapping
+/* osgEarth - Geospatial SDK for OpenSceneGraph
+* Copyright 2018 Pelican Mapping
 * http://osgearth.org
 *
 * osgEarth is free software; you can redistribute it and/or modify
@@ -38,6 +38,10 @@
 #include <osgEarthDrivers/gdal/GDALOptions>
 #include <osgEarthDrivers/osg/OSGOptions>
 #include <osgEarthDrivers/xyz/XYZOptions>
+#include <osgEarthDrivers/debug/DebugOptions>
+#include <osgEarthDrivers/feature_ogr/OGRFeatureOptions>
+
+#include <osgEarthFeatures/FeatureMaskLayer>
 
 #include <osg/PositionAttitudeTransform>
 #include <osgDB/WriteFile>
@@ -45,6 +49,7 @@
 using namespace osgEarth;
 using namespace osgEarth::Drivers;
 using namespace osgEarth::Util;
+using namespace osgEarth::Features;
 
 int
 usage(int argc, char** argv)
@@ -56,6 +61,38 @@ usage(int argc, char** argv)
 
     return 0;
 }
+
+// Demonstrates how to subclass ImageLayer to directly create textures
+// for use in a layer.
+class MyTextureLayer : public ImageLayer
+{
+public:
+    osg::ref_ptr<osg::Texture2D> _tex;
+
+    MyTextureLayer(const char* path)
+    {
+        osg::ref_ptr<osg::Image> image = osgDB::readRefImageFile(path);
+        if (image.valid())
+            _tex = new osg::Texture2D(image.get());
+
+        // Establish a profile for the layer:
+        setProfile(Profile::create("global-geodetic"));
+
+        // Direct the layer to call createTexture:
+        setUseCreateTexture();
+
+        // Restrict the data extents of this layer to LOD 0 (in this case)
+        dataExtents().push_back(DataExtent(getProfile()->getExtent(), 0, 0));
+    }
+
+    osg::Texture* createTexture(const TileKey& key, ProgressCallback* progress, osg::Matrixf& textureMatrix)
+    {
+        // Set the texture matrix corresponding to the tile key:
+        key.getExtent().createScaleBias(getProfile()->getExtent(), textureMatrix);
+
+        return _tex.get();
+    }
+};
 
 /**
  * How to create a simple osgEarth map and display it.
@@ -87,6 +124,11 @@ main(int argc, char** argv)
     ImageLayer* imageLayer = new ImageLayer("OSM", xyz);
     imageLayer->setOpacity(0.5f);
     map->addLayer(imageLayer);
+
+    // a custom layer that displays a user texture:
+    MyTextureLayer* texLayer = new MyTextureLayer("../data/grid2.png");
+    texLayer->setOpacity(0.5f);
+    map->addLayer(texLayer);  
     
     // add a local GeoTIFF inset layer:
     GDALOptions gdal;
@@ -125,7 +167,21 @@ main(int argc, char** argv)
 
     ImageLayerOptions compLayerOptions("My Composite Layer", composite);
     map->addLayer(new ImageLayer(compLayerOptions));
-    
+
+    // mask layer
+    OGRFeatureOptions maskOptions;
+    maskOptions.geometry() = new Polygon();
+    maskOptions.geometry()->push_back(osg::Vec3d(-111.0466, 42.0015, 0));
+    maskOptions.geometry()->push_back(osg::Vec3d(-111.0467, 40.9979, 0));
+    maskOptions.geometry()->push_back(osg::Vec3d(-109.0501, 41.0007, 0));
+    maskOptions.geometry()->push_back(osg::Vec3d(-109.0452, 36.9991, 0));
+    maskOptions.geometry()->push_back(osg::Vec3d(-114.0506, 37.0004, 0));
+    maskOptions.geometry()->push_back(osg::Vec3d(-114.0417, 41.9937, 0));
+    maskOptions.profile() = ProfileOptions("global-geodetic");
+    FeatureMaskLayerOptions maskLayerOptions;
+    maskLayerOptions.name() = "Mask layer";
+    maskLayerOptions.featureSource() = maskOptions;
+    map->addLayer(new FeatureMaskLayer(maskLayerOptions));
 
     // put a model on the map atop Pike's Peak, Colorado, USA
     osg::ref_ptr<osg::Node> model = osgDB::readRefNodeFile("cow.osgt.(0,0,3).trans.osgearth_shadergen");

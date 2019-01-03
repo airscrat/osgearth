@@ -1,7 +1,7 @@
 
 /* -*-c++-*- */
-/* osgEarth - Dynamic map generation toolkit for OpenSceneGraph
- * Copyright 2016 Pelican Mapping
+/* osgEarth - Geospatial SDK for OpenSceneGraph
+ * Copyright 2018 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -91,6 +91,14 @@ void LayerOptions::mergeConfig(const Config& conf)
 {
     ConfigOptions::mergeConfig(conf);
     fromConfig(_conf);
+}
+
+//.................................................................
+
+void
+Layer::TraversalCallback::traverse(osg::Node* node, osg::NodeVisitor* nv) const
+{
+    node->accept(*nv);
 }
 
 //.................................................................
@@ -268,12 +276,8 @@ Layer::getTypeName() const
 Layer*
 Layer::create(const ConfigOptions& options)
 {
-    return create(options.getConfig().key(), options);
-}
+    std::string name = options.getConfig().key();
 
-Layer*
-Layer::create(const std::string& name, const ConfigOptions& options)
-{
     if ( name.empty() )
     {
         OE_WARN << "[Layer] ILLEGAL- Layer::create requires a plugin name" << std::endl;
@@ -337,12 +341,29 @@ Layer::removeCallback(LayerCallback* cb)
         _callbacks.erase( i );
 }
 
-bool
-Layer::cull(const osgUtil::CullVisitor* cv, osg::State::StateSetStack& stateSetStack) const
+void
+Layer::apply(osg::Node* node, osg::NodeVisitor* nv) const
 {
-    //if (getStateSet())
-    //    cv->pushStateSet(getStateSet());
-    return true;
+    if (_traversalCallback.valid())
+    {
+        _traversalCallback->operator()(node, nv);
+    }
+    else
+    {
+        node->accept(*nv);
+    }
+}
+
+void
+Layer::setCullCallback(TraversalCallback* cb)
+{
+    _traversalCallback = cb;
+}
+
+const Layer::TraversalCallback*
+Layer::getCullCallback() const
+{
+    return _traversalCallback.get();
 }
 
 const GeoExtent&
@@ -360,6 +381,12 @@ Layer::getOrCreateStateSet()
         _stateSet = new osg::StateSet();
         _stateSet->setName("Layer");
     }
+    return _stateSet.get();
+}
+
+osg::StateSet*
+Layer::getStateSet() const
+{
     return _stateSet.get();
 }
 
@@ -408,4 +435,10 @@ Layer::releaseGLObjects(osg::State* state) const
         getNode()->releaseGLObjects(state);
     if (getStateSet())
         getStateSet()->releaseGLObjects(state);
+}
+
+void
+Layer::modifyTileBoundingBox(const TileKey& key, osg::BoundingBox& box) const
+{
+    //NOP
 }

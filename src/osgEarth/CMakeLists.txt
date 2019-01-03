@@ -38,6 +38,7 @@ ENDIF(WIN32)
 SET(LIB_NAME osgEarth)
 
 set(TARGET_GLSL
+    CascadeDraping.glsl
     ClipPlane.glsl
     DepthOffset.vert.glsl
     Draping.vert.glsl
@@ -75,6 +76,7 @@ SET(LIB_PUBLIC_HEADERS
     CachePolicy
     CacheSeed
     Capabilities
+    CascadeDrapingDecorator
     Clamping
     ClampableNode
     ClampingTechnique
@@ -173,6 +175,7 @@ SET(LIB_PUBLIC_HEADERS
     ShaderFactory
     ShaderGenerator
     ShaderLoader
+    ShaderMerger
     ShaderUtils
     Shadowing
     SimplexNoise
@@ -253,6 +256,7 @@ set(TARGET_SRC
     CachePolicy.cpp
     CacheSeed.cpp
     Capabilities.cpp
+    CascadeDrapingDecorator.cpp
     Clamping.cpp
     ClampableNode.cpp
     ClampingTechnique.cpp
@@ -338,6 +342,7 @@ set(TARGET_SRC
     ShaderFactory.cpp
     ShaderGenerator.cpp
     ShaderLoader.cpp
+    ShaderMerger.cpp
     ShaderUtils.cpp
     Shadowing.cpp
     SimplexNoise.cpp

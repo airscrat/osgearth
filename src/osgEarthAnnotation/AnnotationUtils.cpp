@@ -1,6 +1,6 @@
 /* -*-c++-*- */
-/* osgEarth - Dynamic map generation toolkit for OpenSceneGraph
-* Copyright 2016 Pelican Mapping
+/* osgEarth - Geospatial SDK for OpenSceneGraph
+* Copyright 2018 Pelican Mapping
 * http://osgearth.org
 *
 * osgEarth is free software; you can redistribute it and/or modify
@@ -296,8 +296,8 @@ AnnotationUtils::createEllipsoidGeometry(float xRadius,
     float lonSpan = maxLon - minLon;
     float aspectRatio = lonSpan/latSpan;
 
-    int latSegments = std::max( 6, (int)ceil(latSpan / maxAngle) );
-    int lonSegments = std::max( 3, (int)ceil(latSegments * aspectRatio) );
+    int latSegments = osg::maximum( 6, (int)ceil(latSpan / maxAngle) );
+    int lonSegments = osg::maximum( 3, (int)ceil(latSegments * aspectRatio) );
 
     float segmentSize = latSpan/latSegments; // degrees
 

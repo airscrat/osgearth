@@ -1,6 +1,6 @@
 /* -*-c++-*- */
-/* osgEarth - Dynamic map generation toolkit for OpenSceneGraph
-* Copyright 2016 Pelican Mapping
+/* osgEarth - Geospatial SDK for OpenSceneGraph
+* Copyright 2018 Pelican Mapping
 * http://osgearth.org
 *
 * osgEarth is free software; you can redistribute it and/or modify
@@ -68,6 +68,7 @@ PlaceNode::PlaceNode() :
 GeoPositionNode()
 {
     construct();
+    compile();
 }
 
 PlaceNode::PlaceNode(const std::string& text,
@@ -547,7 +548,8 @@ PlaceNode::setConfig(const Config& conf)
 Config
 PlaceNode::getConfig() const
 {
-    Config conf( "place" );
+    Config conf = GeoPositionNode::getConfig();
+    conf.key() = "place";
     conf.set( "text",   _text );
     conf.set( "style",  _style );
     if ( _image.valid() ) {

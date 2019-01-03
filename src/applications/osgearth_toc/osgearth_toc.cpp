@@ -1,6 +1,6 @@
 /* -*-c++-*- */
-/* osgEarth - Dynamic map generation toolkit for OpenSceneGraph
-* Copyright 2016 Pelican Mapping
+/* osgEarth - Geospatial SDK for OpenSceneGraph
+* Copyright 2018 Pelican Mapping
 * http://osgearth.org
 *
 * osgEarth is free software; you can redistribute it and/or modify
@@ -23,11 +23,13 @@
 #include <osgEarth/MapNode>
 #include <osgEarth/MapModelChange>
 #include <osgEarth/ElevationPool>
+#include <osgEarth/XmlUtils>
 #include <osgEarthUtil/EarthManipulator>
 #include <osgEarthUtil/Controls>
 #include <osgEarthUtil/ExampleResources>
 #include <osgEarthUtil/ViewFitter>
-#include <osgEarthUtil/RTTPicker>
+#include <osgEarthAnnotation/LabelNode>
+#include <osgEarthAnnotation/AnnotationLayer>
 #include <osgViewer/Viewer>
 #include <osgViewer/ViewerEventHandlers>
 #include <osgGA/StateSetManipulator>
@@ -36,6 +38,7 @@
 using namespace osgEarth;
 using namespace osgEarth::Util;
 using namespace osgEarth::Util::Controls;
+using namespace osgEarth::Annotation;
 
 void createControlPanel(Container*);
 void updateControlPanel();
@@ -126,26 +129,49 @@ struct DumpElevation : public osgGA::GUIEventHandler
     MapNode* _mapNode;
 };
 
-//------------------------------------------------------------------------
-
-struct MyPickCallback : public RTTPicker::Callback
+struct DumpLabel : public osgGA::GUIEventHandler
 {
-    void onHit(ObjectID id)
-    {
-        OE_WARN << "Pick - hit" << std::endl;
-    }
+    DumpLabel(MapNode* mapNode, char c) : _mapNode(mapNode), _c(c), _layer(0L) { }
 
-    void onMiss()
+    bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa, osg::Object*, osg::NodeVisitor*)
     {
-        OE_WARN << "Pick - miss" << std::endl;
-    }
+        if (ea.getEventType() == ea.KEYDOWN && ea.getKey() == _c)
+        {
+            osg::Vec3d world;
+            _mapNode->getTerrain()->getWorldCoordsUnderMouse(aa.asView(), ea.getX(), ea.getY(), world);
 
-    // pick whenever the mouse moves.
-    bool accept(const osgGA::GUIEventAdapter& ea, const osgGA::GUIActionAdapter& aa)
-    {
-        return ea.getEventType() == ea.PUSH;
+            GeoPoint coords;
+            coords.fromWorld(s_activeMap->getSRS(), world);
+
+            if (!_layer)
+            {
+                _layer = new AnnotationLayer();
+                _layer->setName("User-created Labels");
+                _mapNode->getMap()->addLayer(_layer);
+            }
+
+            LabelNode* label = new LabelNode();
+            label->setText("Label");
+            label->setPosition(coords);
+
+            Style style;
+            TextSymbol* symbol = style.getOrCreate<TextSymbol>();
+            symbol->alignment() = symbol->ALIGN_CENTER_CENTER;
+            label->setStyle(style);
+
+            _layer->addChild(label);
+
+            osg::ref_ptr<XmlDocument> xml = new XmlDocument(label->getConfig());
+            xml->store(std::cout);
+        }
+        return false;
     }
+    char _c;
+    MapNode* _mapNode;
+    AnnotationLayer* _layer;
 };
+
+//------------------------------------------------------------------------
 
 int
 main( int argc, char** argv )
@@ -191,10 +217,7 @@ main( int argc, char** argv )
 
     viewer.addEventHandler(new DumpElevation(mapNode, 'E'));
 
-    RTTPicker* picker = new RTTPicker();
-    picker->addChild(mapNode);    
-    picker->setDefaultCallback(new MyPickCallback());
-    viewer.addEventHandler(picker);
+    viewer.addEventHandler(new DumpLabel(mapNode, 'L'));
 
     viewer.run();
 }
@@ -256,9 +279,7 @@ struct RemoveLayerHandler : public ControlEventHandler
     void onClick( Control* control, int mouseButtonMask )
     {
         _inactive[_layer->getName()] = _layer->getConfig(); // save it
-        s_activeMap->beginUpdate();
         s_activeMap->removeLayer(_layer.get()); // and remove it
-        s_activeMap->endUpdate();
     }
     osg::ref_ptr<Layer> _layer;
 };
@@ -378,10 +399,22 @@ addLayerItem( Grid* grid, int layerIndex, int numLayers, Layer* layer, bool isAc
     gridCol++;
 
     // the layer name
-    LabelControl* name = new LabelControl( layer->getName() );
-    if (!layer->getEnabled())
-        name->setForeColor(osg::Vec4f(1,1,1,0.35));
-    grid->setControl( gridCol, gridRow, name );
+    if (layer->getEnabled() && (layer->getExtent().isValid() || layer->getNode()))
+    {
+        ButtonControl* name = new ButtonControl(layer->getName());
+        name->clearBackColor();
+        name->setPadding(4);
+        name->addEventHandler( new ZoomLayerHandler(layer) );
+        grid->setControl( gridCol, gridRow, name );
+    }
+    else
+    {
+        LabelControl* name = new LabelControl( layer->getName() );
+        name->setPadding(4);
+        if (!layer->getEnabled())
+            name->setForeColor(osg::Vec4f(1,1,1,0.35));
+        grid->setControl( gridCol, gridRow, name );
+    }
     gridCol++;
 
     // layer type
@@ -410,16 +443,16 @@ addLayerItem( Grid* grid, int layerIndex, int numLayers, Layer* layer, bool isAc
     }
     gridCol++;
 
-    // zoom button
-    if (layer->getExtent().isValid() || layer->getNode())
-    {
-        LabelControl* zoomButton = new LabelControl("GO", 14);
-        zoomButton->setBackColor( .4,.4,.4,1 );
-        zoomButton->setActiveColor( .8,0,0,1 );
-        zoomButton->addEventHandler( new ZoomLayerHandler(layer) );
-        grid->setControl( gridCol, gridRow, zoomButton );
-    }
-    gridCol++;
+    //// zoom button
+    //if (layer->getExtent().isValid() || layer->getNode())
+    //{
+    //    LabelControl* zoomButton = new LabelControl("GO", 14);
+    //    zoomButton->setBackColor( .4,.4,.4,1 );
+    //    zoomButton->setActiveColor( .8,0,0,1 );
+    //    zoomButton->addEventHandler( new ZoomLayerHandler(layer) );
+    //    grid->setControl( gridCol, gridRow, zoomButton );
+    //}
+    //gridCol++;
 
     // move buttons
     if ( layerIndex < numLayers-1 && isActive )

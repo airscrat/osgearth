@@ -1,6 +1,6 @@
 /* -*-c++-*- */
-/* osgEarth - Dynamic map generation toolkit for OpenSceneGraph
-* Copyright 2016 Pelican Mapping
+/* osgEarth - Geospatial SDK for OpenSceneGraph
+* Copyright 2018 Pelican Mapping
 * http://osgearth.org
 *
 * osgEarth is free software; you can redistribute it and/or modify
@@ -223,7 +223,7 @@ void
 SimpleOceanLayer::modifyTileBoundingBox(const TileKey& key, osg::BoundingBox& box) const
 {
     // Force the max Z to be at least sea level, to satisfy the culling pass
-    box.zMax() = std::max(box.zMax(), (osg::BoundingBox::value_type)0.0);
+    box.zMax() = osg::maximum(box.zMax(), (osg::BoundingBox::value_type)0.0);
 }
 
 void
