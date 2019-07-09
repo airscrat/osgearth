@@ -1,6 +1,6 @@
 /* -*-c++-*- */
 /* osgEarth - Geospatial SDK for OpenSceneGraph
-* Copyright 2018 Pelican Mapping
+* Copyright 2019 Pelican Mapping
 * http://osgearth.org
 *
 * osgEarth is free software; you can redistribute it and/or modify
@@ -196,6 +196,20 @@ osg::Image* ImageToHeightFieldConverter::convertToR32F(const osg::HeightField* h
     osg::Image* image = new osg::Image();
     image->allocateImage(hf->getNumColumns(), hf->getNumRows(), 1, GL_RED, GL_FLOAT);
     image->setInternalTextureFormat(GL_R32F);
+    memcpy(image->data(), &hf->getFloatArray()->front(), sizeof(float) * hf->getFloatArray()->size());
+
+    return image;
+}
+
+osg::Image* ImageToHeightFieldConverter::convertToR16F(const osg::HeightField* hf) const
+{
+    if (!hf) {
+        return NULL;
+    }
+
+    osg::Image* image = new osg::Image();
+    image->allocateImage(hf->getNumColumns(), hf->getNumRows(), 1, GL_RED, GL_FLOAT);
+    image->setInternalTextureFormat(GL_R16F);
     memcpy(image->data(), &hf->getFloatArray()->front(), sizeof(float) * hf->getFloatArray()->size());
 
     return image;

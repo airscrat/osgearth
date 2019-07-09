@@ -1,6 +1,6 @@
 /* -*-c++-*- */
 /* osgEarth - Geospatial SDK for OpenSceneGraph
- * Copyright 2018 Pelican Mapping
+ * Copyright 2019 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -499,8 +499,8 @@ EarthManipulator::Settings::setMinMaxPitch( double min_pitch, double max_pitch )
 void
 EarthManipulator::Settings::setMaxOffset(double max_x_offset, double max_y_offset)
 {
-    _max_x_offset = max_x_offset;
-    _max_y_offset = max_y_offset;
+    _max_x_offset = osg::clampAbove(max_x_offset, 0.0);
+    _max_y_offset = osg::clampAbove(max_y_offset, 0.0);
     dirty();
 }
 
@@ -1295,16 +1295,15 @@ void EarthManipulator::collisionDetect()
     {
         return;
     }
-
     // The camera has changed, so make sure we aren't under the ground.
 
     osg::Vec3d eye = getWorldMatrix().getTrans();
     osg::CoordinateFrame eyeCoordFrame;
-    createLocalCoordFrame( eye, eyeCoordFrame );
+    createLocalCoordFrame(eye, eyeCoordFrame);
     osg::Vec3d eyeUp = getUpVector(eyeCoordFrame);
 
     // Try to intersect the terrain with a vector going straight up and down.
-    double r = osg::minimum( _srs->getEllipsoid()->getRadiusEquator(), _srs->getEllipsoid()->getRadiusPolar() );
+    double r = osg::minimum(_srs->getEllipsoid()->getRadiusEquator(), _srs->getEllipsoid()->getRadiusPolar());
     osg::Vec3d ip, normal;
 
     if (intersect(eye + eyeUp * r, eye - eyeUp * r, ip, normal))
@@ -1316,16 +1315,20 @@ void EarthManipulator::collisionDetect()
         osg::Vec3d v1 = eye - (ip + eyeUp * eps);
         v1.normalize();
 
+        // save rotation so we can restore it later - the setraw method
+        // may alter it and we don't want that.
+        osg::Quat rotation = _rotation;
+
         //osg::Vec3d adjVector = normal;
         osg::Vec3d adjVector = eyeUp;
-        if (v0 * v1 <= 0 )
+        if (v0 * v1 <= 0)
         {
             setByLookAtRaw(ip + adjVector * eps, _center, eyeUp);
+            _rotation = rotation;
         }
 
         //OE_INFO << "hit at " << ip.x() << ", " << ip.y() << ", " << ip.z() << "\n";
     }
-
 }
 
 
@@ -1991,7 +1994,9 @@ EarthManipulator::updateTether(double t)
             // Track all rotations
             else if (_settings->getTetherMode() == TETHER_CENTER_AND_ROTATION)
             {
-                _tetherRotation = L2W.getRotate() * _centerRotation.inverse();
+                osg::Quat finalTetherRotation;
+                finalTetherRotation = L2W.getRotate() * _centerRotation.inverse();
+                _tetherRotation.slerp(t, _tetherRotationVP0, finalTetherRotation);
             }
         }
 
@@ -2313,7 +2318,7 @@ EarthManipulator::updateCamera(osg::Camera& camera)
     double now = osg::Timer::instance()->time_s();
 
     // interpolation through a setViewpoint, if applicable
-    double t = 0.0;
+    double t = 1.0;
 
     // Update a viewpoint transition:
     if (isSettingViewpoint())

@@ -1,6 +1,6 @@
 /* -*-c++-*- */
 /* osgEarth - Geospatial SDK for OpenSceneGraph
- * Copyright 2018 Pelican Mapping
+ * Copyright 2019 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -148,6 +148,17 @@ FeatureSource::open()
     }
 
     _status = initialize(_readOptions.get());
+    return _status;
+}
+
+const Status&
+FeatureSource::create(
+    const FeatureProfile* profile,
+    const FeatureSchema& schema,
+    const Geometry::Type& geometryType,
+    const osgDB::Options* readOptions)
+{
+    _status = Status::Error(Status::ResourceUnavailable, "Driver does not support create");
     return _status;
 }
 

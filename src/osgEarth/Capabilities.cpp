@@ -1,6 +1,6 @@
 /* -*-c++-*- */
 /* osgEarth - Geospatial SDK for OpenSceneGraph
- * Copyright 2018 Pelican Mapping
+ * Copyright 2019 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -20,7 +20,9 @@
 #include <osgEarth/Version>
 #include <osg/FragmentProgram>
 #include <osg/GL2Extensions>
+#include <osg/Version>
 #include <osgViewer/Version>
+#include <gdal_priv.h>
 
 using namespace osgEarth;
 
@@ -182,6 +184,12 @@ _isCoreProfile          ( true )
         const osg::GL2Extensions* GL2 = osg::GL2Extensions::Get( id, true );
 
         OE_INFO << LC << "osgEarth Version: " << osgEarthGetVersion() << std::endl;
+
+        OE_INFO << LC << "OSG Version:      " << osgGetVersion() << std::endl;
+
+#ifdef GDAL_RELEASE_NAME
+        OE_INFO << LC << "GDAL Version:     " << GDAL_RELEASE_NAME << std::endl;
+#endif
         
         if ( ::getenv("OSGEARTH_NO_GLSL") )
         {

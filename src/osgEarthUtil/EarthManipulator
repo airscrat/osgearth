@@ -1,6 +1,6 @@
 /* -*-c++-*- */
 /* osgEarth - Geospatial SDK for OpenSceneGraph
- * Copyright 2018 Pelican Mapping
+ * Copyright 2019 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -855,8 +855,6 @@ namespace osgEarth { namespace Util
         void updateTether(double t);
 
         void updateSetViewpoint();
-
-        void updateHandCam( const osg::Timer_t& now );
 
         bool isMouseClick( const osgGA::GUIEventAdapter* mouse_up_event ) const;
 

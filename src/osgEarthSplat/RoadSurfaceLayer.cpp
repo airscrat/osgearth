@@ -1,6 +1,6 @@
 /* -*-c++-*- */
 /* osgEarth - Geospatial SDK for OpenSceneGraph
- * Copyright 2018 Pelican Mapping
+ * Copyright 2019 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -293,6 +293,9 @@ RoadSurfaceLayer::createImageImplementation(const TileKey& key, ProgressCallback
     GeoExtent featureExtent = key.getExtent().transform(featureSRS);
     GeoExtent queryExtent = featureExtent;
 
+    if (!featureExtent.isValid())
+        return GeoImage::INVALID;
+
     // Buffer the incoming extent, if requested.
     if (options().featureBufferWidth().isSet())
     {
@@ -384,17 +387,10 @@ RoadSurfaceLayer::createImageImplementation(const TileKey& key, ProgressCallback
             Threading::Future<osg::Image> imageFuture;
 
             // Schedule the rasterization and get the future.
-            osg::ref_ptr<TileRasterizer> rasterizer;
-            if (_rasterizer.lock(rasterizer))
-            {
-                imageFuture = rasterizer->push(group.release(), getTileSize(), outputExtent);
+            imageFuture = _rasterizer->push(group.release(), getTileSize(), outputExtent);
 
-                // Immediately discard the temporary reference to the rasterizer, because
-                // otherwise a deadlock can occur if the application exits while the call
-                // to release() below is blocked.
-                rasterizer = 0L;
-            }
-
+            // Block until the image is ready.
+            // NULL means there was nothing to render.
             osg::Image* image = imageFuture.release();
             if (image)
             {

@@ -1,6 +1,6 @@
 /* -*-c++-*- */
 /* osgEarth - Geospatial SDK for OpenSceneGraph
- * Copyright 2018 Pelican Mapping
+ * Copyright 2019 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -101,6 +101,15 @@ namespace osgEarth
         virtual TileSource* createTileSource();
 
         osg::ref_ptr<LandCoverDictionary> _lcDictionary;
+
+        struct MetaImageComponent {
+            MetaImageComponent() : pixel(0L) { }
+            osg::ref_ptr<osg::Image> image;
+            osg::Matrix scaleBias;
+            ImageUtils::PixelReader pixel;
+        };
+        typedef std::map<TileKey, MetaImageComponent> MetaImage;
+        bool readMetaImage(MetaImage&, const TileKey&, double, double, osg::Vec4f& output, ProgressCallback*);
     };
 
 } // namespace osgEarth

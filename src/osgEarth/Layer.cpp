@@ -1,7 +1,7 @@
 
 /* -*-c++-*- */
 /* osgEarth - Geospatial SDK for OpenSceneGraph
- * Copyright 2018 Pelican Mapping
+ * Copyright 2019 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -238,17 +238,6 @@ Layer::open()
         getOrCreateStateSet()->setDefine(options().shaderDefine().get());
     }
 
-    // Load any user defined shaders
-    if (options().shader().isSet() && !options().shader()->empty())
-    {
-        OE_INFO << LC << "Installing inline shader code\n";
-        VirtualProgram* vp = VirtualProgram::getOrCreate(this->getOrCreateStateSet());
-        vp->setName("Layer shader");
-        ShaderPackage package;
-        package.add("", options().shader().get());
-        package.loadAll(vp, getReadOptions());
-    }
-
     return _status;
 }
 
@@ -256,6 +245,18 @@ void
 Layer::close()
 {
     setStatus(Status::OK());
+}
+
+void
+Layer::setTerrainResources(TerrainResources* res)
+{
+    // Install an earth-file shader if necessary (once)
+    if (options().shader().isSet() && !_shader.valid())
+    {
+        OE_INFO << LC << "Installing inline shader code" << std::endl;
+        _shader = new LayerShader(options().shader().get());
+        _shader->install(this, res);
+    }
 }
 
 void

@@ -1,6 +1,6 @@
 /* -*-c++-*- */
 /* osgEarth - Geospatial SDK for OpenSceneGraph
- * Copyright 2018 Pelican Mapping
+ * Copyright 2019 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -278,6 +278,12 @@ namespace osgEarth
          * will result in data.)
          */
         virtual bool isKeyInLegalRange(const TileKey& key) const;
+
+        /**
+         * Same as isKeyInLegalRange, but ignores the "maxDataLevel" setting
+         * since that does NOT affect visibility of a tile.
+         */
+        virtual bool isKeyInVisualRange(const TileKey& key) const;
 
         /**
          * Data Extents reported for this layer are copied into output.

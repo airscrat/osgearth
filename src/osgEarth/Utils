@@ -1,6 +1,6 @@
 /* -*-c++-*- */
 /* osgEarth - Geospatial SDK for OpenSceneGraph
-* Copyright 2018 Pelican Mapping
+* Copyright 2019 Pelican Mapping
 * http://osgearth.org
 *
 * osgEarth is free software; you can redistribute it and/or modify
@@ -61,6 +61,11 @@ namespace osgEarth
             if (!o) return false;
             const OptionsData<T>* data = dynamic_cast<const OptionsData<T>*>(osg::getUserObject(o, name));
             return data ? data->_obj.lock(out) : false;
+        }
+        static osg::ref_ptr<T> get(const osg::Object* o, const std::string& name) {
+            osg::ref_ptr<T> result;
+            bool ok = lock(o, name, result);
+            return result;
         }
     public:
         META_Object(osgEarth,OptionsData);

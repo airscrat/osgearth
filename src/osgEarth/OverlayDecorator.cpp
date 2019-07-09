@@ -1,6 +1,6 @@
 /* -*-c++-*- */
 /* osgEarth - Geospatial SDK for OpenSceneGraph
-* Copyright 2018 Pelican Mapping
+* Copyright 2019 Pelican Mapping
 * http://osgearth.org
 *
 * osgEarth is free software; you can redistribute it and/or modify
@@ -879,6 +879,8 @@ OverlayDecorator::setMaxHorizonDistance( double horizonDistance )
 void
 OverlayDecorator::resizeGLObjectBuffers(unsigned maxSize)
 {
+    osg::Group::resizeGLObjectBuffers(maxSize);
+
     Threading::ScopedWriteLock lock(_perViewDataMutex);
 
     for(PerViewDataMap::iterator i = _perViewData.begin(); i != _perViewData.end(); ++i)
@@ -902,6 +904,8 @@ OverlayDecorator::resizeGLObjectBuffers(unsigned maxSize)
 void
 OverlayDecorator::releaseGLObjects(osg::State* state) const
 {
+    osg::Group::releaseGLObjects(state);
+
     Threading::ScopedWriteLock lock(_perViewDataMutex);
 
     for(PerViewDataMap::const_iterator i = _perViewData.begin(); i != _perViewData.end(); ++i)

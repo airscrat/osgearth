@@ -79,6 +79,13 @@ add_subdirectory(vdatum_egm96)
 add_subdirectory(viewpoints)
 add_subdirectory(vpb)
 add_subdirectory(wcs)
+add_subdirectory(webp)
 add_subdirectory(wms)
 add_subdirectory(xyz)
 
+# Libraries that require C++11 support
+if(CXX11_AVAILABLE)
+    add_subdirectory(gltf)
+else(CXX11_AVAILABLE)
+    message(STATUS "Omitting features that require C++11 support: GLTF")
+endif(CXX11_AVAILABLE)

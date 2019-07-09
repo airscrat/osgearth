@@ -1,6 +1,6 @@
 /* -*-c++-*- */
 /* osgEarth - Geospatial SDK for OpenSceneGraph
-* Copyright 2018 Pelican Mapping
+* Copyright 2019 Pelican Mapping
 * http://osgearth.org
 *
 * osgEarth is free software; you can redistribute it and/or modify
@@ -227,7 +227,7 @@ Style::getConfig( bool keepOrigType ) const
     if ( _origType == "text/css" && keepOrigType )
     {
         conf.set("type", _origType);
-        conf.value() = _origData;            
+        conf.setValue(_origData);
     }
     else
     {

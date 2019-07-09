@@ -1,6 +1,6 @@
 /* -*-c++-*- */
 /* osgEarth - Geospatial SDK for OpenSceneGraph
- * Copyright 2018 Pelican Mapping
+ * Copyright 2019 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -217,7 +217,7 @@ namespace
                 std::string newValue = resolve(inputURI);
                 if ( newValue != input.value() )
                 {
-                    input.value() = newValue;
+                    input.setValue(newValue);
                     input.setReferrer( _newReferrerAbsPath );
                 }
 

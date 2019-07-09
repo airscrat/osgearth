@@ -1,6 +1,6 @@
 /* -*-c++-*- */
 /* osgEarth - Geospatial SDK for OpenSceneGraph
- * Copyright 2018 Pelican Mapping
+ * Copyright 2019 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -387,4 +387,26 @@ SplatCatalog::read(const URI&            uri,
     }
 
     return catalog.release();
+}
+
+//...................................................................
+
+void
+SplatTextureDef::resizeGLObjectBuffers(unsigned maxSize)
+{
+    if (_texture.valid())
+        _texture->resizeGLObjectBuffers(maxSize);
+
+    if (_splatLUTBuffer.valid())
+        _splatLUTBuffer->resizeGLObjectBuffers(maxSize);
+}
+
+void
+SplatTextureDef::releaseGLObjects(osg::State* state) const
+{
+    if (_texture.valid())
+        _texture->releaseGLObjects(state);
+
+    if (_splatLUTBuffer.valid())
+        _splatLUTBuffer->releaseGLObjects(state);
 }

@@ -1,6 +1,6 @@
 /* -*-c++-*- */
 /* osgEarth - Geospatial SDK for OpenSceneGraph
- * Copyright 2018 Pelican Mapping
+ * Copyright 2019 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -173,16 +173,6 @@ TritonContext::initialize(osg::RenderInfo& renderInfo)
                 OE_WARN << LC << "Triton initialization failed- err=" << err << std::endl;
             }
         }
-    }
-}
-
-void
-TritonContext::update(double simTime)
-{
-    if ( _ocean )
-    {
-        // fmod requires b/c CUDA is limited to single-precision values
-        _ocean->UpdateSimulation( fmod(simTime, 86400.0) );
     }
 }
 

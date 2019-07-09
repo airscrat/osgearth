@@ -1,6 +1,6 @@
 /* -*-c++-*- */
 /* osgEarth - Geospatial SDK for OpenSceneGraph
- * Copyright 2018 Pelican Mapping
+ * Copyright 2019 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -766,7 +766,10 @@ LineDrawable::setVertex(unsigned vi, const osg::Vec3& vert)
 
                 // update the main verts:
                 for (unsigned n = ri; n < ri+rnum; ++n)
+                {
                     (*_current)[n] = vert;
+                }
+                _current->dirty();
 
                 // update next/previous verts:
                 if (numVerts == 1u)
@@ -775,22 +778,47 @@ LineDrawable::setVertex(unsigned vi, const osg::Vec3& vert)
                     {
                         (*_next)[i] = (*_previous)[i] = vert;
                     }
+                    _next->dirty();
+                    _previous->dirty();
                 }
                 else 
                 {
-                    unsigned rni = vi==0u? 0u : ri-4u;
-                    unsigned rpi = vi==numVerts-1 ? ri : ri+4u;
-
-                    for(unsigned n=0; n<rnum; ++n)
+                    if (vi > 0u)
                     {
-                        (*_next)[rni+n] = vert;
-                        (*_previous)[rpi+n] = vert;
+                        unsigned rni = ri-4u;
+                        for (unsigned n = 0; n < rnum; ++n)
+                        {
+                            (*_next)[rni + n] = vert;
+                        }
+                        _next->dirty();
+                    }
+                    else // if vi == 0
+                    {
+                        for (unsigned n = 0; n < rnum; ++n)
+                        {
+                            (*_previous)[n] = vert;
+                        }
+                        _previous->dirty();
+                    }
+
+                    if (vi < numVerts-1)
+                    {
+                        unsigned rpi = ri+4u;
+                        for (unsigned n = 0; n < rnum; ++n)
+                        {
+                            (*_previous)[rpi + n] = vert;
+                        }
+                        _previous->dirty();
+                    }
+                    else // if (vi == numVerts-1)
+                    {
+                        for (unsigned n = 0; n < rnum; ++n)
+                        {
+                            (*_next)[ri+n] = vert;
+                        }
+                        _next->dirty();
                     }
                 }
-                
-                _current->dirty();
-                _next->dirty();
-                _previous->dirty();
             }
 
             else if (_mode == GL_LINE_LOOP)
@@ -800,7 +828,10 @@ LineDrawable::setVertex(unsigned vi, const osg::Vec3& vert)
 
                 // update the main verts:
                 for (unsigned n = ri; n < ri+rnum; ++n)
+                {
                     (*_current)[n] = vert;
+                }
+                _current->dirty();
 
                 // update next/previous verts:
                 if (numVerts == 1u)
@@ -822,7 +853,6 @@ LineDrawable::setVertex(unsigned vi, const osg::Vec3& vert)
                     }
                 }
                 
-                _current->dirty();
                 _next->dirty();
                 _previous->dirty();
             }
@@ -1109,20 +1139,28 @@ LineDrawable::dirty()
 
         else if (_mode == GL_LINES)
         {
-            unsigned numEls = (getNumVerts()/2)*6;
-            osg::DrawElements* els = makeDE(numEls);  
+            // if there are an odd number of verts, ignore the last one.
+            unsigned numVerts = getNumVerts();
+            if (numVerts & 0x01) --numVerts;
 
-            for (int e = 0; e < _current->size(); e += 4)
+            if (numVerts > 0u)
             {
-                els->addElement(e+3);
-                els->addElement(e+1);
-                els->addElement(e+0); // PV
-                els->addElement(e+2);
-                els->addElement(e+3);
-                els->addElement(e+0); // PV
-            }
+                unsigned numEls = (numVerts/2)*6;
+                osg::DrawElements* els = makeDE(numEls);  
 
-            addPrimitiveSet(els);
+                for(unsigned e=0; e<numVerts*2u; e += 4)
+                {
+                //for (int e = 0; e < _current->size(); e += 4)
+                    els->addElement(e+3);
+                    els->addElement(e+1);
+                    els->addElement(e+0); // PV
+                    els->addElement(e+2);
+                    els->addElement(e+3);
+                    els->addElement(e+0); // PV
+                }
+
+                addPrimitiveSet(els);
+            }
         }
     }
 

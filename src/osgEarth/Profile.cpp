@@ -1,6 +1,6 @@
 /* -*-c++-*- */
 /* osgEarth - Dynamic map generation toolkit for OpenSceneGraph
- * Copyright 2018 Pelican Mapping
+ * Copyright 2019 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -76,7 +76,9 @@ ProfileOptions::fromConfig( const Config& conf )
     }
 
     conf.get( "num_tiles_wide_at_lod_0", _numTilesWideAtLod0 );
+    conf.get( "tx", _numTilesWideAtLod0 );
     conf.get( "num_tiles_high_at_lod_0", _numTilesHighAtLod0 );
+    conf.get( "ty", _numTilesHighAtLod0 );
 }
 
 Config
@@ -85,7 +87,7 @@ ProfileOptions::getConfig() const
     Config conf( "profile" );
     if ( _namedProfile.isSet() )
     {
-        conf.value() = _namedProfile.value();
+        conf.setValue(_namedProfile.value());
     }
     else
     {

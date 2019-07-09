@@ -1,6 +1,6 @@
 /* -*-c++-*- */
 /* osgEarth - Geospatial SDK for OpenSceneGraph
- * Copyright 2018 Pelican Mapping
+ * Copyright 2019 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -275,7 +275,7 @@ XmlElement::getConfig(const std::string& referrer) const
 				conf.add( static_cast<const XmlElement*>(n)->getConfig(referrer) );
 		}
 
-		conf.value() = getText();
+		conf.setValue(getText());
 		//else 
 		//    conf.value() = trim( static_cast<const XmlText*>(n)->getValue() );
 		return conf;

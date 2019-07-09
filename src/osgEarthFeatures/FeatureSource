@@ -1,6 +1,6 @@
 /* -*-c++-*- */
 /* osgEarth - Geospatial SDK for OpenSceneGraph
- * Copyright 2018 Pelican Mapping
+ * Copyright 2019 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -122,6 +122,12 @@ namespace osgEarth { namespace Features
         //! Opens the feature source and returns an initial status.
         //! Same as calling setReadOptions followed by open()
         const Status& open(const osgDB::Options* readOptions);
+
+        virtual const Status& create(
+            const FeatureProfile* profile,
+            const FeatureSchema& schema,
+            const Geometry::Type& geometryType,
+            const osgDB::Options* readOptions);
 
         /**
          * Status of the feature source

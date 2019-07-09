@@ -1,6 +1,6 @@
 /* -*-c++-*- */
 /* osgEarth - Geospatial SDK for OpenSceneGraph
- * Copyright 2018 Pelican Mapping
+ * Copyright 2019 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -952,6 +952,55 @@ TerrainLayer::isKeyInLegalRange(const TileKey& key) const
 }
 
 bool
+TerrainLayer::isKeyInVisualRange(const TileKey& key) const
+{
+    if (!key.valid())
+    {
+        return false;
+    }
+
+    // We must use the equivalent lod b/c the input key can be in any profile.
+    unsigned localLOD = getProfile() ?
+        getProfile()->getEquivalentLOD(key.getProfile(), key.getLOD()) :
+        key.getLOD();
+
+
+    // First check the key against the min/max level limits, it they are set.
+    if ((options().maxLevel().isSet() && localLOD > options().maxLevel().value()) ||
+        (options().minLevel().isSet() && localLOD < options().minLevel().value()))
+    {
+        return false;
+    }
+
+    // Next, check against resolution limits (based on the source tile size).
+    if (options().minResolution().isSet() || options().maxResolution().isSet())
+    {
+        const Profile* profile = getProfile();
+        if (profile)
+        {
+            // calculate the resolution in the layer's profile, which can
+            // be different that the key's profile.
+            double resKey = key.getExtent().width() / (double)getTileSize();
+            double resLayer = key.getProfile()->getSRS()->transformUnits(resKey, profile->getSRS());
+
+            if (options().maxResolution().isSet() &&
+                options().maxResolution().value() > resLayer)
+            {
+                return false;
+            }
+
+            if (options().minResolution().isSet() &&
+                options().minResolution().value() < resLayer)
+            {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+bool
 TerrainLayer::isCached(const TileKey& key) const
 {
     // first consult the policy:
@@ -1126,8 +1175,11 @@ TerrainLayer::getBestAvailableTileKey(const TileKey& key) const
         return localLOD > MDL ? key.createAncestorKey(MDL) : key;
     }
 
+    // Transform the key's extent to the layer's extent
+    GeoExtent localKeyExtent = getProfile()->clampAndTransformExtent(key.getExtent());
+
     // Reject if the extents don't overlap at all.
-    if (!getDataExtentsUnion().intersects(key.getExtent()))
+    if (!getDataExtentsUnion().intersects(localKeyExtent))
     {
         return TileKey::INVALID;
     }
@@ -1139,7 +1191,7 @@ TerrainLayer::getBestAvailableTileKey(const TileKey& key) const
     for (DataExtentList::const_iterator itr = de.begin(); itr != de.end(); ++itr)
     {
         // check for 2D intersection:
-        if (key.getExtent().intersects(*itr))
+        if (itr->intersects(localKeyExtent))
         {
             // check that the extent isn't higher-resolution than our key:
             if ( !itr->minLevel().isSet() || localLOD >= (int)itr->minLevel().get() )

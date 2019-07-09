@@ -145,19 +145,16 @@ TileNode::create(const TileKey& key, TileNode* parent, EngineContext* context)
     // whether the stitch together normal maps for adjacent tiles.
     _stitchNormalMap = context->_options.normalizeEdges() == true;
 
-    // Encode the tile key in a uniform. Note! The X and Y components are presented
-    // modulo 2^16 form so they don't overrun single-precision space.
+    // Encode the tile key in a uniform
     unsigned tw, th;
     _key.getProfile()->getNumTiles(_key.getLOD(), tw, th);
-
-    const double m = 65536; //pow(2.0, 16.0);
 
     double x = (double)_key.getTileX();
     double y = (double)(th - _key.getTileY()-1);
 
     _tileKeyValue.set(
-        (float)fmod(x, m),
-        (float)fmod(y, m),
+        (float)x,
+        (float)y,
         (float)_key.getLOD(),
         -1.0f);
 
@@ -345,30 +342,30 @@ TileNode::shouldSubDivide(TerrainCuller* culler, const SelectionInfo& selectionI
     unsigned currLOD = _key.getLOD();
 
     EngineContext* context = culler->getEngineContext();
-
-    // In PSOS mode, subdivide when the on-screen size of a tile exceeds the maximum
-    // allowable on-screen tile size in pixels.
-    if (context->getOptions().rangeMode() == osg::LOD::PIXEL_SIZE_ON_SCREEN)
+    
+    if (currLOD < selectionInfo.getNumLODs() && currLOD != selectionInfo.getNumLODs()-1)
     {
-        float tileSizeInPixels = -1.0;
-
-        if (context->getEngine()->getComputeRangeCallback())
+        // In PSOS mode, subdivide when the on-screen size of a tile exceeds the maximum
+        // allowable on-screen tile size in pixels.
+        if (context->getOptions().rangeMode() == osg::LOD::PIXEL_SIZE_ON_SCREEN)
         {
-            tileSizeInPixels = (*context->getEngine()->getComputeRangeCallback())(this, *culler->_cv);
-        }    
+            float tileSizeInPixels = -1.0;
 
-        if (tileSizeInPixels <= 0.0)
-        {
-            tileSizeInPixels = _surface->getPixelSizeOnScreen(culler);
-        }
+            if (context->getEngine()->getComputeRangeCallback())
+            {
+                tileSizeInPixels = (*context->getEngine()->getComputeRangeCallback())(this, *culler->_cv);
+            }    
+
+            if (tileSizeInPixels <= 0.0)
+            {
+                tileSizeInPixels = _surface->getPixelSizeOnScreen(culler);
+            }
         
-        return (tileSizeInPixels > context->getOptions().tilePixelSize().get());
-    }
+            return (tileSizeInPixels > context->getOptions().tilePixelSize().get());
+        }
 
-    // In DISTANCE-TO-EYE mode, use the visibility ranges precomputed in the SelectionInfo.
-    else
-    {
-        if (currLOD < selectionInfo.getNumLODs() && currLOD != selectionInfo.getNumLODs()-1)
+        // In DISTANCE-TO-EYE mode, use the visibility ranges precomputed in the SelectionInfo.
+        else
         {
             float range = selectionInfo.getLOD(currLOD+1)._visibilityRange;
 #if 1
@@ -439,10 +436,14 @@ TileNode::cull(TerrainCuller* culler)
     // whether to accept the current surface node and not the children.
     bool canAcceptSurface = false;
     
-    // Don't create children in progressive mode until content is in place
-    if ( _dirty && context->getOptions().progressive() == true )
+    // Don't load data in progressive mode until the parent is up to date
+    if (context->getOptions().progressive() == true)
     {
-        canCreateChildren = false;
+        TileNode* parent = getParentTile();
+        if ( parent && parent->isDirty() )
+        {
+            canLoadData = false;
+        }
     }
     
     // If this is an inherit-viewpoint camera, we don't need it to invoke subdivision
@@ -994,7 +995,8 @@ TileNode::passInLegalRange(const RenderingPass& pass) const
 {
     return 
         pass.terrainLayer() == 0L ||
-        pass.terrainLayer()->isKeyInLegalRange(getKey());
+        pass.terrainLayer()->isKeyInVisualRange(getKey());
+        //pass.terrainLayer()->isKeyInLegalRange(getKey());
 }
 
 void
@@ -1030,7 +1032,7 @@ TileNode::loadSync()
 {
     osg::ref_ptr<LoadTileData> loadTileData = new LoadTileData(this, _context.get());
     loadTileData->setEnableCancelation(false);
-    loadTileData->invoke();
+    loadTileData->invoke(0L);
     loadTileData->apply(0L);
 }
 

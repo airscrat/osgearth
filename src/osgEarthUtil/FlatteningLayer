@@ -1,6 +1,6 @@
 /* -*-c++-*- */
 /* osgEarth - Geospatial SDK for OpenSceneGraph
- * Copyright 2018 Pelican Mapping
+ * Copyright 2019 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -99,7 +99,7 @@ namespace osgEarth { namespace Util
                 if ( !_script->profile.empty() )
                     scriptConf.set( "profile", _script->profile );
                 else if ( !_script->code.empty() )
-                    scriptConf.value() = _script->code;
+                    scriptConf.setValue(_script->code);
 
                 conf.add( scriptConf );
             }

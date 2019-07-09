@@ -1,6 +1,6 @@
 /* -*-c++-*- */
 /* osgEarth - Geospatial SDK for OpenSceneGraph
- * Copyright 2018 Pelican Mapping
+ * Copyright 2019 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -27,7 +27,6 @@
 #include <osgEarth/Registry>
 #include <osgEarth/PagedNode>
 #include <osgEarth/Endian>
-#include <osgEarth/LineDrawable>
 #include <osgEarth/GLUtils>
 #include <osgEarth/Text>
 
@@ -1061,7 +1060,7 @@ MGRSGraticule::rebuild()
         }
 
         // Root of the geometry tree
-        osg::Group* geomTop = new LineGroup(); //osg::Group();
+        osg::Group* geomTop = new osg::Group();
         top->addChild(geomTop);
 
         // Root of the text tree

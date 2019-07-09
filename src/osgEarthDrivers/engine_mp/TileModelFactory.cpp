@@ -1,6 +1,6 @@
 /* -*-c++-*- */
 /* osgEarth - Geospatial SDK for OpenSceneGraph
-* Copyright 2018 Pelican Mapping
+* Copyright 2019 Pelican Mapping
 * http://osgearth.org
 *
 * osgEarth is free software; you can redistribute it and/or modify
@@ -87,7 +87,7 @@ namespace
             bool hasDataInExtent = _layer->mayHaveData(_key);
             
             // fetch the image from the layer.
-            if (hasDataInExtent && _layer->isKeyInLegalRange(_key))
+            if ((hasDataInExtent && _layer->isKeyInLegalRange(_key)) || isRootKey)
             {
                 if ( useMercatorFastPath )
                 {

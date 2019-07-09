@@ -1,6 +1,6 @@
 /* -*-c++-*- */
 /* osgEarth - Geospatial SDK for OpenSceneGraph
-* Copyright 2018 Pelican Mapping
+* Copyright 2019 Pelican Mapping
 * http://osgearth.org
 *
 * osgEarth is free software; you can redistribute it and/or modify
@@ -442,17 +442,6 @@ addLayerItem( Grid* grid, int layerIndex, int numLayers, Layer* layer, bool isAc
         grid->setControl( gridCol, gridRow, opacity );
     }
     gridCol++;
-
-    //// zoom button
-    //if (layer->getExtent().isValid() || layer->getNode())
-    //{
-    //    LabelControl* zoomButton = new LabelControl("GO", 14);
-    //    zoomButton->setBackColor( .4,.4,.4,1 );
-    //    zoomButton->setActiveColor( .8,0,0,1 );
-    //    zoomButton->addEventHandler( new ZoomLayerHandler(layer) );
-    //    grid->setControl( gridCol, gridRow, zoomButton );
-    //}
-    //gridCol++;
 
     // move buttons
     if ( layerIndex < numLayers-1 && isActive )

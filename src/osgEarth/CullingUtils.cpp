@@ -1,6 +1,6 @@
 /* -*-c++-*- */
 /* osgEarth - Geospatial SDK for OpenSceneGraph
- * Copyright 2018 Pelican Mapping
+ * Copyright 2019 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -1099,6 +1099,7 @@ CullDebugger::dumpRenderBin(osgUtil::RenderBin* bin) const
     Config conf("RenderBin");
     if ( !bin->getName().empty() )
         conf.set("Name", bin->getName());
+    conf.set("SortMode", Stringify()<<bin->getSortMode());
     if (bin->getStateSet())
         conf.set("StateSet", dumpStateSet(bin->getStateSet()));
 

@@ -1,6 +1,6 @@
 /* -*-c++-*- */
 /* osgEarth - Geospatial SDK for OpenSceneGraph
- * Copyright 2018 Pelican Mapping
+ * Copyright 2019 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -255,6 +255,13 @@ readLayers(XmlElement* e, WMSLayer* parentLayer, WMSLayer::LayerList& layers)
                 minY = as<double>(e_gbb->getSubElementText( ATTR_SOUTHLAT ), 0);
                 maxX = as<double>(e_gbb->getSubElementText( ATTR_EASTLON ), 0);
                 maxY = as<double>(e_gbb->getSubElementText( ATTR_NORTHLAT ), 0);
+                layer->setLatLonExtents(minX, minY, maxX, maxY);
+            }
+            else if (parentLayer)
+            {
+                // inherit the LL BB from the parent layer if there was one
+                double minX, minY, maxX, maxY;
+                parentLayer->getLatLonExtents(minX, minY, maxX, maxY);
                 layer->setLatLonExtents(minX, minY, maxX, maxY);
             }
         }

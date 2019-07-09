@@ -1,6 +1,6 @@
 /* -*-c++-*- */
 /* osgEarth - Geospatial SDK for OpenSceneGraph
- * Copyright 2018 Pelican Mapping
+ * Copyright 2019 Pelican Mapping
  * http://osgearth.org
  *
  * osgEarth is free software; you can redistribute it and/or modify
@@ -380,6 +380,7 @@ ImageLayer::setAltitude(const Distance& value)
         getOrCreateStateSet()->removeUniform("oe_terrain_altitude");
         stateSet->removeMode(GL_CULL_FACE);
     }
+    fireCallback( &ImageLayerCallback::onAltitudeChanged );
 }
 
 void
@@ -874,16 +875,19 @@ ImageLayer::assembleImage(const TileKey& key, ProgressCallback* progress)
             }
         }
 
-        if ( mosaic.getImages().empty() || retry )
+        // Fail is: a) we got no data and the LOD is greater than zero; or
+        // b) the operation was canceled mid-stream.
+        if ( (mosaic.getImages().empty() && key.getLOD() > 0) || retry)
         {
-            // if we didn't get any data, fail.
+            // if we didn't get any data at LOD>0, fail.
             OE_DEBUG << LC << "Couldn't create image for ImageMosaic " << std::endl;
             return GeoImage::INVALID;
         }
 
-        // We got at least one good tile, so go through the bad ones and try to fall back on
-        // lower resolution data to fill in the gaps. The entire mosaic must be populated or
-        // this qualifies as a bad tile.
+        // We got at least one good tile, OR we got nothing but since the LOD==0 we have to
+        // fall back on a lower resolution.
+        // So now we go through the failed keys and try to fall back on lower resolution data
+        // to fill in the gaps. The entire mosaic must be populated or this qualifies as a bad tile.
         for(std::vector<TileKey>::iterator k = failedKeys.begin(); k != failedKeys.end(); ++k)
         {
             GeoImage image;
@@ -957,8 +961,7 @@ ImageLayer::assembleImage(const TileKey& key, ProgressCallback* progress)
         result = mosaicedImage.reproject( 
             key.getProfile()->getSRS(),
             &key.getExtent(), 
-            options().reprojectedTileSize().get(),
-            options().reprojectedTileSize().get(),
+            getTileSize(), getTileSize(),
             options().driver()->bilinearReprojection().get());
     }
 

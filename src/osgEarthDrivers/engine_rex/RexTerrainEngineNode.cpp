@@ -219,23 +219,15 @@ RexTerrainEngineNode::resizeGLObjectBuffers(unsigned maxSize)
 void
 RexTerrainEngineNode::releaseGLObjects(osg::State* state) const
 {
-    TerrainEngineNode::releaseGLObjects(state);
+    //getStateSet()->releaseGLObjects(state);
 
-    getStateSet()->releaseGLObjects(state);
-
-    _terrain->getStateSet()->releaseGLObjects(state);
+    //_terrain->getStateSet()->releaseGLObjects(state);
 
     _imageLayerStateSet.get()->releaseGLObjects(state);
 
-    // TODO: where should this live? MapNode?
-    LayerVector layers;
-    getMap()->getLayers(layers);
-    for (LayerVector::const_iterator i = layers.begin(); i != layers.end(); ++i)
-    {
-        if ((*i)->getStateSet()) {
-            (*i)->getStateSet()->releaseGLObjects(state);
-        }
-    }
+    _geometryPool->clear();
+
+    TerrainEngineNode::releaseGLObjects(state);
 }
 
 void
@@ -251,9 +243,6 @@ RexTerrainEngineNode::setMap(const Map* map, const TerrainOptions& options)
     // Force the mercator fast path off, since REX does not support it yet.
     TerrainOptions myOptions = options;
     myOptions.enableMercatorFastPath() = false;
-
-    // A callback for overriding bounding boxes for tiles
-    _modifyBBoxCallback = new ModifyBoundingBoxCallback(map);
 
     // merge in the custom options:
     _terrainOptions.merge( myOptions );
@@ -370,8 +359,7 @@ RexTerrainEngineNode::setMap(const Map* map, const TerrainOptions& options)
         _liveTiles.get(),
         _renderBindings,
         _terrainOptions,
-        _selectionInfo,
-        _modifyBBoxCallback.get());
+        _selectionInfo);
 
     // Calculate the LOD morphing parameters:
     unsigned maxLOD = _terrainOptions.maxLOD().getOrUse(DEFAULT_MAX_LOD);
@@ -499,6 +487,7 @@ RexTerrainEngineNode::setupRenderBindings()
 void
 RexTerrainEngineNode::dirtyTerrain()
 {
+    _terrain->releaseGLObjects();
     _terrain->removeChildren(0, _terrain->getNumChildren());
 
     // clear the loader:
@@ -627,6 +616,15 @@ RexTerrainEngineNode::traverse(osg::NodeVisitor& nv)
         // Assemble the terrain drawables:
         _terrain->accept(culler);
 
+        // If we're using geometry pooling, optimize the drawable for shared state
+        // by sorting the draw commands.
+        // TODO: benchmark this further to see whether it's worthwhile
+        unsigned totalTiles = 0L;
+        if (getEngineContext()->getGeometryPool()->isEnabled())
+        {
+            totalTiles = culler._terrain.sortDrawCommands();
+        }
+
 #ifdef PROFILE
         osg::Timer_t s2 = osg::Timer::instance()->tick();
         double delta = osg::Timer::instance()->delta_m(s1, s2);
@@ -635,20 +633,11 @@ RexTerrainEngineNode::traverse(osg::NodeVisitor& nv)
         if (times.size() == 60)
         {
             Registry::instance()->startActivity("CULL(ms)", Stringify()<<(times_total/times.size()));
+            Registry::instance()->startActivity("Tiles:", Stringify()<<totalTiles);
             times.clear();
             times_total = 0;
         }
 #endif
-
-        // If we're using geometry pooling, optimize the drawable for shared state
-        // by sorting the draw commands.
-        // TODO: benchmark this further to see whether it's worthwhile
-        if (getEngineContext()->getGeometryPool()->isEnabled())
-        {
-            unsigned total = culler._terrain.sortDrawCommands();
-            //if (!culler._isSpy)
-            //    OE_INFO << LC << "Total tiles to draw = " << total << std::endl;
-        }
 
         // The common stateset for the terrain group:
         cv->pushStateSet(_terrain->getOrCreateStateSet());

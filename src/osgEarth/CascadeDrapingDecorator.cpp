@@ -352,6 +352,11 @@ namespace
             : osg::Camera(), _parentCamera(parentCamera), _dm(dm)
         {
             setCullingActive( false );
+            osg::StateSet* ss = getOrCreateStateSet();
+
+            // do not sort geometry - draw it in traversal order without depth testing
+            ss->setMode(GL_DEPTH_TEST, 0);
+            ss->setRenderBinDetails(1, "TraversalOrderBin", osg::StateSet::OVERRIDE_PROTECTED_RENDERBIN_DETAILS);
         }
 
     public: // osg::Node
@@ -360,6 +365,27 @@ namespace
         {
             DrapingCullSet& cullSet = _dm.get(_parentCamera);
             cullSet.accept( nv );
+
+            // manhandle the render bin sorting, since OSG ignores the override
+            // in the render bin details above
+            osgUtil::CullVisitor* cv = dynamic_cast<osgUtil::CullVisitor*>(&nv);
+            if (cv)
+            {
+                applyTraversalOrderSorting(cv->getCurrentRenderBin());
+            }
+        }
+
+        void applyTraversalOrderSorting(osgUtil::RenderBin* bin)
+        {
+            bin->setSortMode(osgUtil::RenderBin::TRAVERSAL_ORDER);
+
+            for (osgUtil::RenderBin::RenderBinList::iterator i = bin->getRenderBinList().begin();
+                i != bin->getRenderBinList().end();
+                ++i)
+            {
+                osgUtil::RenderBin* child = i->second.get();
+                applyTraversalOrderSorting(child);
+            }
         }
 
     protected:
@@ -496,7 +522,7 @@ CascadeDrapingDecorator::CameraLocal::initialize(osg::Camera* camera, CascadeDra
     unsigned textureHeight;
 
     unsigned multiSamples;
-    osg::Texture::FilterMode minifyFilter;
+    osg::Texture::FilterMode minifyFilter, magnifyFilter;
     osg::Vec4 clearColor;
     bool mipmapping = decorator._mipmapping;
 
@@ -509,6 +535,7 @@ CascadeDrapingDecorator::CameraLocal::initialize(osg::Camera* camera, CascadeDra
         _maxCascades = 2u; // limit to one cascade when picking
         multiSamples = 0u; // no antialiasing allowed
         minifyFilter = osg::Texture::NEAREST; // no texture filtering allowed
+        magnifyFilter = osg::Texture::NEAREST;
         clearColor.set(0,0,0,0);
         mipmapping = false;
     }
@@ -519,6 +546,7 @@ CascadeDrapingDecorator::CameraLocal::initialize(osg::Camera* camera, CascadeDra
         _maxCascades = decorator._maxCascades;
         multiSamples = decorator._multisamples;
         minifyFilter = mipmapping? osg::Texture::LINEAR_MIPMAP_LINEAR : osg::Texture::LINEAR;
+        magnifyFilter = osg::Texture::LINEAR;
         clearColor.set(1,1,1,0);
     }
 
@@ -530,7 +558,7 @@ CascadeDrapingDecorator::CameraLocal::initialize(osg::Camera* camera, CascadeDra
     tex->setSourceType(GL_UNSIGNED_BYTE);
     tex->setResizeNonPowerOfTwoHint(false);
     tex->setFilter(tex->MIN_FILTER, minifyFilter);
-    tex->setFilter(tex->MAG_FILTER, tex->LINEAR);
+    tex->setFilter(tex->MAG_FILTER, magnifyFilter);
     tex->setWrap(tex->WRAP_S, tex->CLAMP_TO_EDGE);
     tex->setWrap(tex->WRAP_T, tex->CLAMP_TO_EDGE);
     tex->setMaxAnisotropy(4.0f);
@@ -911,7 +939,8 @@ CascadeDrapingDecorator::CameraLocal::traverse(osgUtil::CullVisitor* cv, Cascade
     // Create a view matrix that looks straight down at the horizon plane form the eyepoint.
     // This will be our view matrix for all RTT draping cameras.
     osg::Matrix rttView;
-    osg::Vec3d rttLook = -horizonPlane.getNormal();
+    osg::Vec3d rttLook = -ellipsoid->computeLocalUpVector(camEye.x(), camEye.y(), camEye.z());
+    rttLook.normalize();
     osg::Vec3d camLeft = camUp ^ camLook;
     osg::Vec3d rttUp = rttLook ^ camLeft;
     rttView.makeLookAt(camEye, camEye + rttLook, rttUp);

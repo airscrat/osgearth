@@ -1,6 +1,6 @@
 /* -*-c++-*- */
 /* osgEarth - Geospatial SDK for OpenSceneGraph
-* Copyright 2018 Pelican Mapping
+* Copyright 2019 Pelican Mapping
 * http://osgearth.org
 *
 * osgEarth is free software; you can redistribute it and/or modify
@@ -135,6 +135,10 @@ Config::merge( const Config& rhs )
     // add in the new values.
     for( ConfigSet::const_iterator c = rhs._children.begin(); c != rhs._children.end(); ++c )
         add( *c );
+    
+    // merge ref map
+    for( RefMap::const_iterator c = rhs._refMap.begin(); c != rhs._refMap.end(); ++c )
+        _refMap[c->first] = c->second;
 }
 
 const Config*
@@ -242,7 +246,10 @@ namespace
                             Config& c = i->second[0];
                             if ( c.isSimple() )
                             {
-                                value[i->first] = c.value();
+                                if (c.isNumber())
+                                    value[i->first] = c.valueAs<double>(0.0);
+                                else
+                                    value[i->first] = c.value();
                             }
                             else
                             {
@@ -357,7 +364,7 @@ namespace
                 }
                 else if ( (*i) == "$value" )
                 {
-                    conf.value() = value.asString();
+                    conf.setValue(value.asString());
                 }
                 else if ( (*i) == "$children" && value.isArray() )
                 {
@@ -365,7 +372,16 @@ namespace
                 }
                 else
                 {
-                    conf.add( *i, value.asString() );
+                    if( value.isBool())
+                        conf.add(*i, value.asBool());
+                    else if( value.isDouble())
+                        conf.add(*i, value.asDouble());
+                    else if (value.isInt())
+                        conf.add(*i, value.asInt());
+                    else if (value.isUInt())
+                        conf.add(*i, value.asUInt());
+                    else
+                        conf.add(*i, value.asString());
                 }
             }
         }
@@ -381,7 +397,7 @@ namespace
         }
         else if ( json.type() != Json::nullValue )
         {
-            conf.value() = json.asString();
+            conf.setValue(json.asString());
         }
     }
 }
